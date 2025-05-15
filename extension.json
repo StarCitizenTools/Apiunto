@@ -1,6 +1,6 @@
 {
 	"name": "Apiunto",
-	"version": "2.0.0",
+	"version": "3.0.0",
 	"author": [
 		"[https://www.mediawiki.org/wiki/User:Octfx Octfx]"
 	],
@@ -9,12 +9,12 @@
 	"license-name": "MIT",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.39.0",
+		"MediaWiki": ">= 1.43.0",
 		"extensions": {
 			"Scribunto": "*"
 		},
 		"platform": {
-			"php": ">=7.3.19"
+			"php": ">=8.1"
 		}
 	},
 	"MessagesDirs": {
@@ -37,10 +37,6 @@
 		"ApiuntoTimeout": {
 			"value": 5,
 			"description": "Request Timeout in Seconds"
-		},
-		"ApiuntoApiVersion": {
-			"value": "v1",
-			"description": "Accepted Version"
 		},
 		"ApiuntoDefaultLocale": {
 			"description": "The Locale to return, unset to get all translations",
