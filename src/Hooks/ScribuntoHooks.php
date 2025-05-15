@@ -21,7 +21,7 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\Apiunto\Hooks;
 
-use MediaWiki\Extension\Apiunto\Scribunto_ApiuntoLuaLibrary;
+use MediaWiki\Extension\Apiunto\ApiuntoLuaLibrary;
 
 /**
  * Hooks for Apiunto extension
@@ -37,7 +37,7 @@ class ScribuntoHooks {
 	 */
 	public static function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ): bool {
 		if ( $engine === 'lua' ) {
-			$extraLibraries['mw.ext.Apiunto'] = Scribunto_ApiuntoLuaLibrary::class;
+			$extraLibraries['mw.ext.Apiunto'] = ApiuntoLuaLibrary::class;
 		}
 
 		return true;

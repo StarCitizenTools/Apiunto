@@ -21,18 +21,18 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\Apiunto;
 
-use ConfigException;
 use GuzzleHttp\Client;
+use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Extension\Apiunto\Repositories\RawRepository;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
 use MediaWiki\MediaWikiServices;
-use Scribunto_LuaEngine;
-use Scribunto_LuaLibraryBase;
 
 /**
  * Methods callable by LUA
  */
-class Scribunto_ApiuntoLuaLibrary extends Scribunto_LuaLibraryBase {
+class ApiuntoLuaLibrary extends LibraryBase {
 
     /**
      * Page identifier like ship name oder comm-link id
@@ -44,19 +44,11 @@ class Scribunto_ApiuntoLuaLibrary extends Scribunto_LuaLibraryBase {
      */
     public const QUERY_PARAMS = 'query';
 
-    /**
-     * @var Client
-     */
-    private static $client;
+    private static ?Client $client = null;
 
-    private $availableIncludes;
+    private array $availableIncludes = [];
 
-    /**
-     * Initializes the guzzle client
-     *
-     * @param Scribunto_LuaEngine $engine
-     */
-    public function __construct( Scribunto_LuaEngine $engine ) {
+    public function __construct( LuaEngine $engine ) {
         parent::__construct( $engine );
 
         if ( static::$client === null ) {
