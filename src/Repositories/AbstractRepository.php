@@ -34,6 +34,7 @@ abstract class AbstractRepository {
 	public const API_ENDPOINT = '';
 
 	public const PROP_KEY = 'apiuntocache';
+	public const PROP_KEY_CACHE_TIME = 'apiuntocachetime';
 
 	/**
 	 * @var Client
