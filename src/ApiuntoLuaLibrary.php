@@ -25,6 +25,7 @@ use GuzzleHttp\Client;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Extension\Apiunto\Repositories\RawRepository;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
 use MediaWiki\MediaWikiServices;
@@ -36,17 +37,26 @@ class ApiuntoLuaLibrary extends LibraryBase {
 
     /**
      * Page identifier like ship name oder comm-link id
+     * @var string
      */
     public const IDENTIFIER = 'identifier';
 
-    /**
-     * Query parameters
-     */
+    /** @var string */
     public const QUERY_PARAMS = 'query';
 
-    private static ?Client $client = null;
+    /** @var string */
+    public const PARAM_LIMIT = 'limit';
 
-    private array $availableIncludes = [];
+    /** @var string */
+    public const PARAM_PAGE = 'page';
+
+    /** @var string */
+    public const PARAM_LOCALE = 'locale';
+    
+    /** @var string */
+    public const PARAM_INCLUDE = 'include';
+
+    private static ?Client $client = null;
 
     public function __construct( LuaEngine $engine ) {
         parent::__construct( $engine );
@@ -57,10 +67,8 @@ class ApiuntoLuaLibrary extends LibraryBase {
     }
 
     /**
-     * Initializes the guzzle client
-     * Adds the bearer token if set in the config
-     *
-     * @return void
+     * Initializes the guzzle client.
+     * Adds the bearer token if set in the config.
      */
     private function initGuzzleClient(): void {
         $apiKey = $this->getConfigValue( 'ApiuntoKey' );
@@ -81,9 +89,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
     }
 
     /**
-     * Registers the callable lua methods
-     *
-     * @return array
+     * Registers the callable lua methods.
      */
     public function register(): array {
         $lib = [
@@ -102,20 +108,38 @@ class ApiuntoLuaLibrary extends LibraryBase {
     }
 
     /**
-     * Raw request
+     * Raw request.
+     * Identifier is the complete uri excluding 'api'.
      *
-     * Identifier is the complete uri excluding 'api'
-     *
-     * @return array
+     * @throws LuaError If arguments are invalid.
      */
     public function getRaw(): array {
-        $params = func_get_args();
+        $args = func_get_args();
 
-        $this->availableIncludes = $params[1]['include'] ?? [];
+        if ( !isset( $args[0] ) || !is_string( $args[0] ) || $args[0] === '' ) {
+            throw new LuaError( 'Apiunto: Call to getRaw() requires a non-empty string identifier as the first argument.' );
+        }
+        $identifier = $args[0];
+
+        $inputOptions = [];
+        if ( isset( $args[1] ) ) {
+            if ( is_array( $args[1] ) ) {
+                $inputOptions = $args[1];
+            } else {
+                // Log a warning but proceed with empty options if the second arg is not an array.
+                // Lua will get an empty result if this leads to an invalid API call,
+                // or the API might handle default parameters.
+                wfLogWarning( sprintf(
+                    'Apiunto: Call to getRaw() for identifier "%s" expected an array for options (second argument), got %s. Proceeding with empty options.',
+                    $identifier,
+                    gettype( $args[1] )
+                ) );
+            }
+        }
 
         $repository = new RawRepository( static::$client, [
-            self::IDENTIFIER => $params[0],
-            self::QUERY_PARAMS => $this->processArgs( $params[1] ),
+            self::IDENTIFIER => $identifier,
+            self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
         ] );
 
         $response = $repository->getRaw();
@@ -125,18 +149,17 @@ class ApiuntoLuaLibrary extends LibraryBase {
     }
 
     /**
-     * Processes the method arguments
-     * Returns an array used by http_build_query
+     * Processes the method arguments from Lua.
      *
-     * @param array $arguments Method arguments
-     * @return array HTTP Query data
+     * @param array $arguments Method arguments from Lua.
+     * @return array HTTP Query data, filtered for non-empty values.
      */
     private function processArgs( array $arguments ): array {
         $data = [
-            'limit' => $arguments['limit'] ?? '',
-            'page' => $arguments['page'] ?? '',
-            'locale' => $this->processLocale( $arguments ),
-            'include' => $this->processIncludes( $arguments ),
+            self::PARAM_LIMIT => $arguments[self::PARAM_LIMIT] ?? '',
+            self::PARAM_PAGE => $arguments[self::PARAM_PAGE] ?? '',
+            self::PARAM_LOCALE => $this->processLocale( $arguments ),
+            self::PARAM_INCLUDE => $this->processIncludes( $arguments ),
         ];
 
         return array_filter( $data, static function ( $value ) {
@@ -145,62 +168,53 @@ class ApiuntoLuaLibrary extends LibraryBase {
     }
 
     /**
-     * @param array $arguments Method arguments
-     * @return string Locale string
+     * @param array $arguments Method arguments from Lua.
+     * @return string Comma-separated string of locales, or default/empty string.
      */
     private function processLocale( array $arguments ): string {
-        if ( !isset( $arguments['locale'] ) ) {
+        if ( !isset( $arguments[self::PARAM_LOCALE] ) ) {
             return $this->getConfigValue( 'ApiuntoDefaultLocale' ) ?? '';
         }
 
-        $arguments = $arguments['locale'];
+        $localeValue = $arguments[self::PARAM_LOCALE];
 
-        if ( !is_array( $arguments ) ) {
-            $arguments = [ $arguments ];
-        }
+        $localesArray = is_array( $localeValue ) ? $localeValue : [ $localeValue ];
+        $localesArray = array_map( 'strval', $localesArray );
 
-        return implode( ',', $arguments );
+        return implode( ',', $localesArray );
     }
 
     /**
-     * Returns a string with all invalid includes removed
-     *
-     * @param array $arguments Method arguments
-     * @return string
+     * @param array $arguments Method arguments from Lua.
+     * @return string Comma-separated string of includes, or empty string.
      */
     private function processIncludes( array $arguments ): string {
-        if ( !isset( $arguments['include'] ) ) {
+        if ( !isset( $arguments[self::PARAM_INCLUDE] ) ) {
             return '';
         }
 
-        $arguments = $arguments['include'];
+        $includesInput = $arguments[self::PARAM_INCLUDE];
 
-        if ( !is_array( $arguments ) ) {
-            $arguments = [ $arguments ];
+        if ( is_array( $includesInput ) ) {
+            $includesArray = array_map( 'strval', $includesInput );
+        } elseif ( is_string( $includesInput ) ) {
+            $includesArray = [ $includesInput ];
+        } else {
+            return '';
         }
 
-        $validIncludes = [];
-
-        foreach ( $arguments as $include ) {
-            foreach ( $this->availableIncludes as $availableInclude ) {
-                if ( strpos( $include, $availableInclude ) !== false ) {
-                    $validIncludes[] = $include;
-                }
-            }
-        }
-
-        return implode( ',', $validIncludes );
+        return implode( ',', $includesArray );
     }
 
     /**
-     * Loads a config value for a given key from the main config
-     * Returns null on if an ConfigException was thrown
+     * Loads a config value for a given key from the main config.
+     * Returns null if a ConfigException was thrown and no default is provided.
      *
-     * @param string $key The config key
-     * @param null $default Default value to return
-     * @return mixed|null
+     * @param string $key The config key.
+     * @param mixed|null $default Default value to return if config is not found.
+     * @return mixed The configuration value or the default.
      */
-    private function getConfigValue( string $key, $default = null ) {
+    private function getConfigValue( string $key, mixed $default = null ): mixed {
         try {
             $value = MediaWikiServices::getInstance()->getMainConfig()->get( $key );
         } catch ( ConfigException $e ) {
@@ -217,13 +231,16 @@ class ApiuntoLuaLibrary extends LibraryBase {
     }
 
     /**
-     * Write the cache key to the page props for purging
+     * Writes the cache key to the page properties for purging.
      *
-     * @param AbstractRepository $repository
+     * @param AbstractRepository $repository The repository used for the request.
      */
     private function writeCachePropertyKey( AbstractRepository $repository ): void {
         wfDebugLog( 'Apiunto', 'Writing page prop' );
 
-        $this->getParser()->getOutput()->setPageProperty( 'apiuntocache', $repository->makeCacheKey() );
+        $parserOutput = $this->getParser()->getOutput();
+
+        $parserOutput->setPageProperty( AbstractRepository::PROP_KEY, $repository->makeCacheKey() );
+        $parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_TIME, time() );
     }
 }

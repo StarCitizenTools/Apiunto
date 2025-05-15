@@ -22,43 +22,44 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\Apiunto\Hooks;
 
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
+use MediaWiki\Hook\InfoActionHook;
 use MediaWiki\Page\PageProps;
-use MediaWiki\Page\Hook\ArticlePurgeHook;
-use ObjectCacheFactory;
 
-class PurgeHooks implements ArticlePurgeHook {
+class ActionHooks implements InfoActionHook  {
 
 	public function __construct(
-		private readonly ObjectCacheFactory $objectCacheFactory,
 		private readonly PageProps $pageProps
 	) {}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function onArticlePurge( $wikiPage ): void {
-		wfDebugLog( 'Apiunto', 'Running Purge Hook' );
+	public function onInfoAction( $context, &$pageInfo ): void {
+		wfDebugLog( 'Apiunto', 'Running Info Action Hook' );
 
-		if ( $wikiPage->getTitle() === null ) {
-			return;
-		}
-
-		$key = $this->pageProps->getProperties(
-			$wikiPage,
-			AbstractRepository::PROP_KEY
+		$properties = $this->pageProps->getProperties(
+			$context->getTitle(),
+			[ AbstractRepository::PROP_KEY, AbstractRepository::PROP_KEY_CACHE_TIME ]
 		);
 
-		if ( empty( $key ) ) {
-			wfDebugLog( 'Apiunto', sprintf( 'No "%s" cache key found.', AbstractRepository::PROP_KEY ) );
+		$properties = array_shift( $properties );
+
+		if ( $properties === [] ) {
 			return;
 		}
 
-		$key = array_shift( $key );
+		if ( isset( $properties[ AbstractRepository::PROP_KEY ] ) ) {
+			$pageInfo['header-apiunto'][] = [
+				$context->msg( 'apiunto-cache-key-info-label' ),
+				$properties[ AbstractRepository::PROP_KEY ]
+			];
+		}
 
-		wfDebugLog( 'Apiunto', sprintf( 'Deleting cache key %s', $key ) );
-
-		$success = $this->objectCacheFactory->getLocalClusterInstance()->delete( $key );
-
-		wfDebugLog( 'Apiunto', sprintf( 'Cache deletion was%s successful.', !$success ?: ' not' ) );
+		if ( isset( $properties[ AbstractRepository::PROP_KEY_CACHE_TIME ] ) ) {
+			$pageInfo['header-apiunto'][] = [
+				$context->msg( 'apiunto-cache-time-info-label' ),
+				$context->getLanguage()->timeanddate( $properties[ AbstractRepository::PROP_KEY_CACHE_TIME ], true, true, true )
+			];
+		}
 	}
 }

@@ -57,6 +57,12 @@
 		}
 	},
 	"HookHandlers": {
+		"ActionHooks": {
+			"class": "MediaWiki\\Extension\\Apiunto\\Hooks\\ActionHooks",
+			"services": [
+				"PageProps"
+			]
+		},
 		"PurgeHooks": {
 			"class": "MediaWiki\\Extension\\Apiunto\\Hooks\\PurgeHooks",
 			"services": [
@@ -67,6 +73,7 @@
 	},
 	"Hooks": {
 		"ArticlePurge": "PurgeHooks",
+		"InfoAction": "ActionHooks",
 		"ScribuntoExternalLibraries": "MediaWiki\\Extension\\Apiunto\\Hooks\\ScribuntoHooks::onScribuntoExternalLibraries"
 	},
 	"manifest_version": 2
