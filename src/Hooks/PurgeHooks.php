@@ -23,10 +23,18 @@ namespace MediaWiki\Extension\Apiunto\Hooks;
 
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageProps;
 use MediaWiki\Page\Hook\ArticlePurgeHook;
 use ObjectCache;
+use ObjectCacheFactory;
 
 class PurgeHooks implements ArticlePurgeHook {
+
+	public function __construct(
+		private readonly ObjectCacheFactory $objectCacheFactory,
+		private readonly PageProps $pageProps
+	) {}
+
 	/**
 	 * @inheritDoc
 	 */
@@ -37,7 +45,7 @@ class PurgeHooks implements ArticlePurgeHook {
 			return;
 		}
 
-		$key = MediaWikiServices::getInstance()->getPageProps()->getProperties(
+		$key = $this->pageProps->getProperties(
 			$wikiPage,
 			AbstractRepository::PROP_KEY
 		);
@@ -51,7 +59,7 @@ class PurgeHooks implements ArticlePurgeHook {
 
 		wfDebugLog( 'Apiunto', sprintf( 'Deleting cache key %s', $key ) );
 
-		$success = ObjectCache::getLocalClusterInstance()->delete( $key );
+		$success = $this->objectCacheFactory->getLocalClusterInstance()->delete( $key );
 
 		wfDebugLog( 'Apiunto', sprintf( 'Cache deletion was%s successful.', !$success ?: ' not' ) );
 	}
