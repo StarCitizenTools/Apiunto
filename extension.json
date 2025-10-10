@@ -26,34 +26,13 @@
 		"MediaWiki\\Extension\\Apiunto\\": "src/"
 	},
 	"config": {
-		"ApiuntoKey": {
-			"value": null,
-			"description": "Api Key which is added to Requests"
-		},
-		"ApiuntoUrl": {
-			"value": null,
-			"description": "Url to the Api"
-		},
-		"ApiuntoTimeout": {
-			"value": 5,
-			"description": "Request Timeout in Seconds"
-		},
-		"ApiuntoDefaultLocale": {
-			"description": "The Locale to return, unset to get all translations",
-			"value": null
+		"ApiuntoSources": {
+			"value": [],
+			"description": "An array of API sources. Each source has a baseUrl, token, timeout, and cacheDuration."
 		},
 		"ApiuntoEnableCache": {
 			"description": "Save api responses in cache",
 			"value": true
-		},
-		"ApiuntoCacheTimes": {
-			"description": "Specific cache expiries",
-			"value": {
-				"Default": 86400,
-				"comm-links": 31536000,
-				"starmap/starsystems": 2592000,
-				"starmap/celestial-objects": 2592000
-			}
 		}
 	},
 	"HookHandlers": {

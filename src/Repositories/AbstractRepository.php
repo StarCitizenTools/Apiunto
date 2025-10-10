@@ -31,8 +31,6 @@ use MediaWiki\MediaWikiServices;
 use Wikimedia\ObjectCache\BagOStuff;
 
 abstract class AbstractRepository {
-	public const API_ENDPOINT = '';
-
 	public const PROP_KEY = 'apiuntocache';
 	public const PROP_KEY_CACHE_TIME = 'apiuntocachetime';
 
@@ -45,6 +43,11 @@ abstract class AbstractRepository {
 	 * @var array|null
 	 */
 	protected $options;
+
+	/**
+	 * @var array
+	 */
+	protected array $sourceConfig;
 
 	/**
 	 * @var Config
@@ -60,10 +63,12 @@ abstract class AbstractRepository {
 	 * AbstractRepository constructor.
 	 *
 	 * @param Client $client Request Client
+	 * @param array $sourceConfig
 	 * @param null|array $options Request options gets appended to the request url
 	 */
-	public function __construct( Client $client, $options = null ) {
+	public function __construct( Client $client, array $sourceConfig, $options = null ) {
 		$this->client = $client;
+		$this->sourceConfig = $sourceConfig;
 
 		if ( is_array( $options ) ) {
 			$this->options = $options;
@@ -92,11 +97,7 @@ abstract class AbstractRepository {
 			wfDebugLog( 'Apiunto', 'Retrieving Data from API' );
 
 			try {
-				$url = sprintf(
-					'%s/%s',
-					static::API_ENDPOINT,
-					$this->options[ ApiuntoLuaLibrary::IDENTIFIER ]
-				);
+				$url = $this->options[ ApiuntoLuaLibrary::IDENTIFIER ];
 
 				$response = $this->client->get(
 					$url,
@@ -125,14 +126,12 @@ abstract class AbstractRepository {
 
 		if ( $this->config->get( 'ApiuntoEnableCache' ) !== true ) {
 			wfDebugLog( 'Apiunto', 'Cache is disabled' );
-			return $callback();
+			return (string)$callback();
 		}
-
-		$expires = $this->config->get( 'ApiuntoCacheTimes' );
 
 		$value = $this->bagOStuff->getWithSetCallback(
 			$this->makeCacheKey(),
-			$expires[ str_replace( 'api/', '', self::API_ENDPOINT ) ] ?? $expires[ 'Default' ],
+			$this->sourceConfig['cacheDuration'] ?? 86400,
 			$callback
 		);
 
@@ -152,7 +151,6 @@ abstract class AbstractRepository {
 		$key = $this->bagOStuff->makeKey(
 			'ext',
 			self::PROP_KEY,
-			explode( '/', static::API_ENDPOINT )[1] ?? static::API_ENDPOINT,
 			...(array)( $this->options[ ApiuntoLuaLibrary::IDENTIFIER ] ),
 			...array_values( $this->options[ ApiuntoLuaLibrary::QUERY_PARAMS ] ),
 		);
