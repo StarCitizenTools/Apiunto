@@ -35,212 +35,167 @@ use MediaWiki\MediaWikiServices;
  */
 class ApiuntoLuaLibrary extends LibraryBase {
 
-    /**
-     * Page identifier like ship name oder comm-link id
-     * @var string
-     */
-    public const IDENTIFIER = 'identifier';
+	/**
+	 * Page identifier like ship name oder comm-link id
+	 * @var string
+	 */
+	public const IDENTIFIER = 'identifier';
 
-    /** @var string */
-    public const QUERY_PARAMS = 'query';
+	/** @var string */
+	public const QUERY_PARAMS = 'query';
 
-    /** @var string */
-    public const PARAM_LIMIT = 'limit';
+	/**
+	 * Registers the callable lua methods.
+	 */
+	public function register(): array {
+		$lib = [
+			'get_raw' => [ $this, 'getRaw' ],
+		];
 
-    /** @var string */
-    public const PARAM_PAGE = 'page';
+		return $this->getEngine()->registerInterface(
+			sprintf(
+				'%s%s%s',
+				__DIR__,
+				DIRECTORY_SEPARATOR,
+				'mw.ext.Apiunto.lua'
+			),
+			$lib
+		);
+	}
 
-    /** @var string */
-    public const PARAM_LOCALE = 'locale';
-    
-    /** @var string */
-    public const PARAM_INCLUDE = 'include';
+	/**
+	 * Raw request.
+	 * Identifier is the complete uri excluding 'api'.
+	 *
+	 * @throws LuaError If arguments are invalid.
+	 */
+	public function getRaw(): array {
+		$args = func_get_args();
 
-    private static ?Client $client = null;
+		if ( !isset( $args[0] ) || !is_string( $args[0] ) || $args[0] === '' ) {
+			throw new LuaError( 'Apiunto: Call to getRaw() requires a non-empty string source as the first argument.' );
+		}
+		$sourceName = $args[0];
 
-    public function __construct( LuaEngine $engine ) {
-        parent::__construct( $engine );
+		if ( !isset( $args[1] ) || !is_string( $args[1] ) ) {
+			throw new LuaError( 'Apiunto: Call to getRaw() requires a string identifier as the second argument.' );
+		}
+		$identifier = $args[1];
 
-        if ( static::$client === null ) {
-            $this->initGuzzleClient();
-        }
-    }
+		$inputOptions = [];
+		if ( isset( $args[2] ) ) {
+			if ( is_array( $args[2] ) ) {
+				$inputOptions = $args[2];
+			} else {
+				// Log a warning but proceed with empty options if the second arg is not an array.
+				// Lua will get an empty result if this leads to an invalid API call,
+				// or the API might handle default parameters.
+				wfLogWarning( sprintf(
+					'Apiunto: Call to getRaw() for identifier "%s" expected an array for options (third argument), got %s. Proceeding with empty options.',
+					$identifier,
+					gettype( $args[2] )
+				) );
+			}
+		}
 
-    /**
-     * Initializes the guzzle client.
-     * Adds the bearer token if set in the config.
-     */
-    private function initGuzzleClient(): void {
-        $apiKey = $this->getConfigValue( 'ApiuntoKey' );
+		$sources = $this->getConfigValue( 'ApiuntoSources' );
+		if ( !isset( $sources[$sourceName] ) ) {
+			throw new LuaError( "Apiunto: Source '{$sourceName}' not found in configuration." );
+		}
+		$sourceConfig = $sources[$sourceName];
 
-        $headers = [
-            'User-Agent' => 'MediaWiki/ext-apiunto-' . MW_VERSION,
-        ];
+		$client = $this->createGuzzleClient( $sourceConfig );
 
-        if ( null !== $apiKey ) {
-            $headers['Authorization'] = "Bearer {$apiKey}";
-        }
+		$repository = new RawRepository( $client, $sourceConfig, [
+			self::IDENTIFIER => $identifier,
+			self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
+		] );
 
-        static::$client = new Client( [
-            'base_uri' => $this->getConfigValue( 'ApiuntoUrl' ),
-            'timeout' => $this->getConfigValue( 'ApiuntoTimeout', 5 ),
-            'headers' => $headers,
-        ] );
-    }
+		$response = $repository->getRaw();
+		$this->writeCachePropertyKey( $repository );
 
-    /**
-     * Registers the callable lua methods.
-     */
-    public function register(): array {
-        $lib = [
-            'get_raw' => [ $this, 'getRaw' ],
-        ];
+		return [ $response ];
+	}
 
-        return $this->getEngine()->registerInterface(
-            sprintf(
-                '%s%s%s',
-                __DIR__,
-                DIRECTORY_SEPARATOR,
-                'mw.ext.Apiunto.lua'
-            ),
-            $lib
-        );
-    }
+	/**
+	 * Creates a new Guzzle client instance based on the source configuration.
+	 *
+	 * @param array $sourceConfig The configuration for the API source.
+	 * @return Client A new GuzzleHttp client.
+	 */
+	private function createGuzzleClient( array $sourceConfig ): Client {
+		$headers = [
+			'User-Agent' => 'MediaWiki/ext-apiunto-' . MW_VERSION,
+		];
 
-    /**
-     * Raw request.
-     * Identifier is the complete uri excluding 'api'.
-     *
-     * @throws LuaError If arguments are invalid.
-     */
-    public function getRaw(): array {
-        $args = func_get_args();
+		if ( !empty( $sourceConfig['token'] ) ) {
+			$headers['Authorization'] = "Bearer {$sourceConfig['token']}";
+		}
 
-        if ( !isset( $args[0] ) || !is_string( $args[0] ) || $args[0] === '' ) {
-            throw new LuaError( 'Apiunto: Call to getRaw() requires a non-empty string identifier as the first argument.' );
-        }
-        $identifier = $args[0];
+		return new Client( [
+			'base_uri' => $sourceConfig['baseUrl'],
+			'timeout' => $sourceConfig['timeout'] ?? 5,
+			'headers' => $headers,
+		] );
+	}
 
-        $inputOptions = [];
-        if ( isset( $args[1] ) ) {
-            if ( is_array( $args[1] ) ) {
-                $inputOptions = $args[1];
-            } else {
-                // Log a warning but proceed with empty options if the second arg is not an array.
-                // Lua will get an empty result if this leads to an invalid API call,
-                // or the API might handle default parameters.
-                wfLogWarning( sprintf(
-                    'Apiunto: Call to getRaw() for identifier "%s" expected an array for options (second argument), got %s. Proceeding with empty options.',
-                    $identifier,
-                    gettype( $args[1] )
-                ) );
-            }
-        }
+	/**
+	 * Processes the method arguments from Lua.
+	 *
+	 * @param array $arguments Method arguments from Lua.
+	 * @return array HTTP Query data, filtered for non-empty values.
+	 */
+	private function processArgs( array $arguments ): array {
+		$query = [];
+		foreach ( $arguments as $key => $value ) {
+			$key = strval( $key );
+			if ( is_array( $value ) ) {
+				$query[$key] = implode( ',', array_map( 'strval', $value ) );
+			} else {
+				$query[$key] = strval( $value );
+			}
+		}
 
-        $repository = new RawRepository( static::$client, [
-            self::IDENTIFIER => $identifier,
-            self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
-        ] );
+		return array_filter( $query, static function ( $value ) {
+			return $value !== '';
+		} );
+	}
 
-        $response = $repository->getRaw();
-        $this->writeCachePropertyKey( $repository );
+	/**
+	 * Loads a config value for a given key from the main config.
+	 * Returns null if a ConfigException was thrown and no default is provided.
+	 *
+	 * @param string $key The config key.
+	 * @param mixed|null $default Default value to return if config is not found.
+	 * @return mixed The configuration value or the default.
+	 */
+	private function getConfigValue( string $key, mixed $default = null ): mixed {
+		try {
+			$value = MediaWikiServices::getInstance()->getMainConfig()->get( $key );
+		} catch ( ConfigException $e ) {
+			if ( $default === null ) {
+				wfLogWarning( sprintf( 'Could not get config for "$wg%s". %s', $key,
+					$e->getMessage() ) );
+				$value = null;
+			} else {
+				$value = $default;
+			}
+		}
 
-        return [ $response ];
-    }
+		return $value;
+	}
 
-    /**
-     * Processes the method arguments from Lua.
-     *
-     * @param array $arguments Method arguments from Lua.
-     * @return array HTTP Query data, filtered for non-empty values.
-     */
-    private function processArgs( array $arguments ): array {
-        $data = [
-            self::PARAM_LIMIT => $arguments[self::PARAM_LIMIT] ?? '',
-            self::PARAM_PAGE => $arguments[self::PARAM_PAGE] ?? '',
-            self::PARAM_LOCALE => $this->processLocale( $arguments ),
-            self::PARAM_INCLUDE => $this->processIncludes( $arguments ),
-        ];
+	/**
+	 * Writes the cache key to the page properties for purging.
+	 *
+	 * @param AbstractRepository $repository The repository used for the request.
+	 */
+	private function writeCachePropertyKey( AbstractRepository $repository ): void {
+		wfDebugLog( 'Apiunto', 'Writing page prop' );
 
-        return array_filter( $data, static function ( $value ) {
-            return !empty( $value );
-        } );
-    }
+		$parserOutput = $this->getParser()->getOutput();
 
-    /**
-     * @param array $arguments Method arguments from Lua.
-     * @return string Comma-separated string of locales, or default/empty string.
-     */
-    private function processLocale( array $arguments ): string {
-        if ( !isset( $arguments[self::PARAM_LOCALE] ) ) {
-            return $this->getConfigValue( 'ApiuntoDefaultLocale' ) ?? '';
-        }
-
-        $localeValue = $arguments[self::PARAM_LOCALE];
-
-        $localesArray = is_array( $localeValue ) ? $localeValue : [ $localeValue ];
-        $localesArray = array_map( 'strval', $localesArray );
-
-        return implode( ',', $localesArray );
-    }
-
-    /**
-     * @param array $arguments Method arguments from Lua.
-     * @return string Comma-separated string of includes, or empty string.
-     */
-    private function processIncludes( array $arguments ): string {
-        if ( !isset( $arguments[self::PARAM_INCLUDE] ) ) {
-            return '';
-        }
-
-        $includesInput = $arguments[self::PARAM_INCLUDE];
-
-        if ( is_array( $includesInput ) ) {
-            $includesArray = array_map( 'strval', $includesInput );
-        } elseif ( is_string( $includesInput ) ) {
-            $includesArray = [ $includesInput ];
-        } else {
-            return '';
-        }
-
-        return implode( ',', $includesArray );
-    }
-
-    /**
-     * Loads a config value for a given key from the main config.
-     * Returns null if a ConfigException was thrown and no default is provided.
-     *
-     * @param string $key The config key.
-     * @param mixed|null $default Default value to return if config is not found.
-     * @return mixed The configuration value or the default.
-     */
-    private function getConfigValue( string $key, mixed $default = null ): mixed {
-        try {
-            $value = MediaWikiServices::getInstance()->getMainConfig()->get( $key );
-        } catch ( ConfigException $e ) {
-            if ( $default === null ) {
-                wfLogWarning( sprintf( 'Could not get config for "$wg%s". %s', $key,
-                    $e->getMessage() ) );
-                $value = null;
-            } else {
-                $value = $default;
-            }
-        }
-
-        return $value;
-    }
-
-    /**
-     * Writes the cache key to the page properties for purging.
-     *
-     * @param AbstractRepository $repository The repository used for the request.
-     */
-    private function writeCachePropertyKey( AbstractRepository $repository ): void {
-        wfDebugLog( 'Apiunto', 'Writing page prop' );
-
-        $parserOutput = $this->getParser()->getOutput();
-
-        $parserOutput->setPageProperty( AbstractRepository::PROP_KEY, $repository->makeCacheKey() );
-        $parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_TIME, time() );
-    }
+		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, $repository->makeCacheKey() );
+		$parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_TIME, time() );
+	}
 }

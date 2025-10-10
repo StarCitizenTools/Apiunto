@@ -26,8 +26,6 @@ namespace MediaWiki\Extension\Apiunto\Repositories;
  */
 class RawRepository extends AbstractRepository {
 
-	public const API_ENDPOINT = 'api';
-
 	/**
 	 * @return string
 	 */
