@@ -32,8 +32,6 @@ use Wikimedia\ObjectCache\BagOStuff;
 
 abstract class AbstractRepository {
 	public const PROP_KEY = 'apiuntocache';
-	public const PROP_KEY_CACHE_TIME = 'apiuntocachetime';
-	public const PROP_KEY_CACHE_EXPIRES = 'apiuntocacheexpires';
 	private const DEFAULT_CACHE_DURATION = 86400;
 
 	/**

@@ -21,9 +21,11 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\Apiunto\Hooks;
 
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Hook\InfoActionHook;
 use MediaWiki\Page\PageProps;
+use MediaWiki\Html\Html;
 
 class ActionHooks implements InfoActionHook  {
 
@@ -39,38 +41,58 @@ class ActionHooks implements InfoActionHook  {
 
 		$properties = $this->pageProps->getProperties(
 			$context->getTitle(),
-			[
-				AbstractRepository::PROP_KEY,
-				AbstractRepository::PROP_KEY_CACHE_TIME,
-				AbstractRepository::PROP_KEY_CACHE_EXPIRES
-			]
+			AbstractRepository::PROP_KEY
 		);
 
-		$properties = array_shift( $properties );
+		$prop = $properties[$context->getTitle()->getArticleID()] ?? null;
 
-		if ( $properties === [] ) {
+		if ( !$prop ) {
 			return;
 		}
 
-		if ( isset( $properties[ AbstractRepository::PROP_KEY ] ) ) {
-			$pageInfo['header-apiunto'][] = [
-				$context->msg( 'apiunto-cache-key-info-label' ),
-				$properties[ AbstractRepository::PROP_KEY ]
-			];
+		$caches = json_decode( (string)$prop, true );
+		if ( !is_array( $caches ) || empty( $caches ) ) {
+			return;
 		}
 
-		if ( isset( $properties[ AbstractRepository::PROP_KEY_CACHE_TIME ] ) ) {
+		foreach ( $caches as $cache ) {
 			$pageInfo['header-apiunto'][] = [
-				$context->msg( 'apiunto-cache-time-info-label' ),
-				$context->getLanguage()->timeanddate( $properties[ AbstractRepository::PROP_KEY_CACHE_TIME ], true, true, true )
+				htmlspecialchars( $cache['source'] ),
+				$this->buildCacheInfoList( $cache, $context ),
 			];
 		}
+	}
 
-		if ( isset( $properties[ AbstractRepository::PROP_KEY_CACHE_EXPIRES ] ) ) {
-			$pageInfo['header-apiunto'][] = [
-				$context->msg( 'apiunto-cache-expires-info-label' ),
-				$context->getLanguage()->timeanddate( $properties[ AbstractRepository::PROP_KEY_CACHE_EXPIRES ], true, true, true )
-			];
-		}
+	private function buildCacheInfoList( array $cache, IContextSource $context ): string {
+		$items = [
+			$this->buildCacheKeyItem( $cache, $context ),
+			$this->buildCacheTimeItem( $cache, $context ),
+			$this->buildCacheExpiresItem( $cache, $context ),
+		];
+
+		return Html::rawElement( 'ul', [], implode( '', $items ) );
+	}
+
+	private function buildCacheKeyItem( array $cache, IContextSource $context ): string {
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-key-info-label' )->escaped() . ': ' );
+		$value = Html::element( 'code', [], htmlspecialchars( $cache['key'] ) );
+
+		return Html::rawElement( 'li', [], $label . $value );
+	}
+
+	private function buildCacheTimeItem( array $cache, IContextSource $context ): string {
+		$lang = $context->getLanguage();
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-time-info-label' )->escaped() . ': ' );
+		$value = Html::element( 'time', [], $lang->timeanddate( $cache['time'], true ) );
+
+		return Html::rawElement( 'li', [], $label . $value );
+	}
+
+	private function buildCacheExpiresItem( array $cache, IContextSource $context ): string {
+		$lang = $context->getLanguage();
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-expires-info-label' )->escaped() . ': ' );
+		$value = Html::element( 'time', [], $lang->timeanddate( $cache['expires'], true ) );
+
+		return Html::rawElement( 'li', [], $label . $value );
 	}
 }
