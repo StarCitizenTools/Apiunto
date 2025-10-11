@@ -6,7 +6,8 @@
 	},
 	"apiunto-desc": "Lua-Erweiterung für die Star Citizen Wiki API",
 	"pageinfo-header-apiunto": "Apiunto",
-	"apiunto-cache-key-info-label": "Cache-Schlüssel",
-	"apiunto-cache-time-info-label": "Cache-Zeit",
-	"apiunto-cache-expires-info-label": "Cache-Ablaufzeit"
+	"apiunto-pageinfo-cache-key-label": "Cache-Schlüssel",
+	"apiunto-pageinfo-cache-time-label": "Cache-Zeit",
+	"apiunto-pageinfo-cache-expires-label": "Cache-Ablaufzeit",
+	"apiunto-pageinfo-request-count-label": "Anfrage-Anzahl"
 }
