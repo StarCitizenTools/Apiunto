@@ -46,8 +46,7 @@
 		"PurgeHooks": {
 			"class": "MediaWiki\\Extension\\Apiunto\\Hooks\\PurgeHooks",
 			"services": [
-				"ObjectCacheFactory",
-				"PageProps"
+				"Apiunto.CachePurger"
 			]
 		}
 	},

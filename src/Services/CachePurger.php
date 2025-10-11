@@ -47,22 +47,36 @@ class CachePurger {
 		}
 	}
 
-	public function purgeByPageId( int $pageId, ?string $cacheKey = null ): void {
+	public function purgeByPageId( int $pageId, ?string $propertyValue = null ): void {
+		if ( $propertyValue === null ) {
+			$dbr = $this->dbProvider->getReplicaDatabase();
+			$propertyValue = $dbr->selectField(
+				'page_props',
+				'pp_value',
+				[ 'pp_page' => $pageId, 'pp_propname' => AbstractRepository::PROP_KEY ],
+				__METHOD__
+			);
+		}
+
+		if ( $propertyValue ) {
+			$caches = json_decode( (string)$propertyValue, true );
+			if ( is_array( $caches ) ) {
+				$cache = ObjectCache::getLocalClusterInstance();
+				foreach ( $caches as $cacheInfo ) {
+					if ( isset( $cacheInfo['key'] ) ) {
+						$cache->delete( $cacheInfo['key'] );
+					}
+				}
+			}
+		}
+
 		$dbw = $this->dbProvider->getPrimaryDatabase();
 		$dbw->delete(
 			'page_props',
 			[
 				'pp_page' => $pageId,
-				'pp_propname' => [
-					AbstractRepository::PROP_KEY,
-					AbstractRepository::PROP_KEY_CACHE_TIME,
-					AbstractRepository::PROP_KEY_CACHE_EXPIRES,
-				],
+				'pp_propname' => AbstractRepository::PROP_KEY,
 			]
 		);
-
-		if ( $cacheKey ) {
-			ObjectCache::getLocalClusterInstance()->delete( $cacheKey );
-		}
 	}
 }

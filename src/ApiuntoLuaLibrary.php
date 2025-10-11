@@ -112,7 +112,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 		] );
 
 		$response = $repository->getRaw();
-		$this->writeCachePropertyKey( $repository );
+		$this->writeCachePropertyKey( $repository, $sourceName );
 
 		return [ $response ];
 	}
@@ -189,14 +189,26 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	 * Writes the cache key to the page properties for purging.
 	 *
 	 * @param AbstractRepository $repository The repository used for the request.
+	 * @param string $sourceName The name of the API source.
 	 */
-	private function writeCachePropertyKey( AbstractRepository $repository ): void {
+	private function writeCachePropertyKey( AbstractRepository $repository, string $sourceName ): void {
 		wfDebugLog( 'Apiunto', 'Writing page prop' );
 
 		$parserOutput = $this->getParser()->getOutput();
 
-		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, $repository->makeCacheKey() );
-		$parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_TIME, time() );
-		$parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_EXPIRES, time() + $repository->getCacheDuration() );
+		$propValue = $parserOutput->getPageProperty( AbstractRepository::PROP_KEY );
+		$caches = $propValue ? json_decode( (string)$propValue, true ) : [];
+		if ( !is_array( $caches ) ) {
+			$caches = [];
+		}
+
+		$caches[] = [
+			'source' => $sourceName,
+			'key' => $repository->makeCacheKey(),
+			'time' => time(),
+			'expires' => time() + $repository->getCacheDuration(),
+		];
+
+		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, json_encode( $caches ) );
 	}
 }
