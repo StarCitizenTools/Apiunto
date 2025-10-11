@@ -1,13 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
-			"FoXFTW"
+			"Octfx",
+			"Alistair3149"
 		]
 	},
 	"apiunto-desc": "{{desc|what=extension|name=Apiunto|url=https://github.com/StarCitizenWiki/Apiunto}}",
 	"pageinfo-header-apiunto": "Apiunto",
-	"apiunto-pageinfo-cache-key-label": "The cache key for the Apiunto Extension",
-	"apiunto-pageinfo-cache-time-label": "The cache time for the Apiunto Extension",
-	"apiunto-pageinfo-cache-expires-label": "The cache expiry for the Apiunto Extension",
-	"apiunto-pageinfo-request-count-label": "The request count for the Apiunto Extension"
+	"apiunto-cache-key-info-label": "The cache key for the Apiunto Extension",
+	"apiunto-cache-time-info-label": "The cache time for the Apiunto Extension",
+	"apiunto-cache-expires-info-label": "The cache expiry for the Apiunto Extension",
+	"apiunto-request-count-info-label": "The request count for the Apiunto Extension"
 }

@@ -1,13 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
-			"Alistair"
+			"Octfx",
+			"Alistair3149"
 		]
 	},
 	"apiunto-desc": "Lua extension for the Star Citizen Wiki Api",
 	"pageinfo-header-apiunto": "Apiunto",
-	"apiunto-pageinfo-cache-key-label": "Cache key",
-	"apiunto-pageinfo-cache-time-label": "Cache time",
-	"apiunto-pageinfo-cache-expires-label": "Cache expires",
-	"apiunto-pageinfo-request-count-label": "Request count"
+	"apiunto-cache-key-info-label": "Key",
+	"apiunto-cache-time-info-label": "Cached on",
+	"apiunto-cache-expires-info-label": "Expires on",
+	"apiunto-request-count-info-label": "Request count"
 }

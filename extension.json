@@ -2,7 +2,8 @@
 	"name": "Apiunto",
 	"version": "3.0.0",
 	"author": [
-		"[https://www.mediawiki.org/wiki/User:Octfx Octfx]"
+		"[https://www.mediawiki.org/wiki/User:Octfx Octfx]",
+		"[https://www.mediawiki.org/wiki/User:Alistair3149 Alistair3149]"
 	],
 	"url": "https://github.com/StarCitizenWiki/Apiunto",
 	"descriptionmsg": "apiunto-desc",
