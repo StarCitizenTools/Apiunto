@@ -4,8 +4,9 @@
 			"FoXFTW"
 		]
 	},
-	"apiunto-desc": "Lua Extension für die Star Citizen Wiki Api",
+	"apiunto-desc": "Lua-Erweiterung für die Star Citizen Wiki API",
 	"pageinfo-header-apiunto": "Apiunto",
-	"apiunto-cache-key-info-label": "Cache key",
-	"apiunto-cache-time-info-label": "Cache time"
+	"apiunto-cache-key-info-label": "Cache-Schlüssel",
+	"apiunto-cache-time-info-label": "Cache-Zeit",
+	"apiunto-cache-expires-info-label": "Cache-Ablaufzeit"
 }

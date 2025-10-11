@@ -197,5 +197,6 @@ class ApiuntoLuaLibrary extends LibraryBase {
 
 		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, $repository->makeCacheKey() );
 		$parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_TIME, time() );
+		$parserOutput->setNumericPageProperty( AbstractRepository::PROP_KEY_CACHE_EXPIRES, time() + $repository->getCacheDuration() );
 	}
 }
