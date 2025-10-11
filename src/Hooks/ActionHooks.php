@@ -78,7 +78,7 @@ class ActionHooks implements InfoActionHook  {
 	}
 
 	private function buildCacheKeyItem( array $cache, IContextSource $context ): string {
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-pageinfo-cache-key-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-key-info-label' )->escaped() . ': ' );
 		$value = Html::element( 'code', [], htmlspecialchars( $cache['key'] ) );
 
 		return Html::rawElement( 'li', [], $label . $value );
@@ -86,7 +86,7 @@ class ActionHooks implements InfoActionHook  {
 
 	private function buildCacheTimeItem( array $cache, IContextSource $context ): string {
 		$lang = $context->getLanguage();
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-pageinfo-cache-time-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-time-info-label' )->escaped() . ': ' );
 		$value = Html::element( 'time', [], $lang->timeanddate( $cache['time'], true ) );
 
 		return Html::rawElement( 'li', [], $label . $value );
@@ -94,14 +94,14 @@ class ActionHooks implements InfoActionHook  {
 
 	private function buildCacheExpiresItem( array $cache, IContextSource $context ): string {
 		$lang = $context->getLanguage();
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-pageinfo-cache-expires-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-expires-info-label' )->escaped() . ': ' );
 		$value = Html::element( 'time', [], $lang->timeanddate( $cache['expires'], true ) );
 
 		return Html::rawElement( 'li', [], $label . $value );
 	}
 
 	private function buildRequestCountItem( array $cache, IContextSource $context ): string {
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-pageinfo-request-count-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-request-count-info-label' )->escaped() . ': ' );
 		$value = htmlspecialchars( (string)$cache['count'] );
 
 		return Html::rawElement( 'li', [], $label . $value );

@@ -1,13 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
-			"FoXFTW"
+			"Octfx",
+			"Alistair3149"
 		]
 	},
 	"apiunto-desc": "Lua-Erweiterung für die Star Citizen Wiki API",
 	"pageinfo-header-apiunto": "Apiunto",
-	"apiunto-pageinfo-cache-key-label": "Cache-Schlüssel",
-	"apiunto-pageinfo-cache-time-label": "Cache-Zeit",
-	"apiunto-pageinfo-cache-expires-label": "Cache-Ablaufzeit",
-	"apiunto-pageinfo-request-count-label": "Anfrage-Anzahl"
+	"apiunto-cache-key-info-label": "Schlüssel",
+	"apiunto-cache-time-info-label": "Gecacht am",
+	"apiunto-cache-expires-info-label": "Läuft ab am",
+	"apiunto-request-count-info-label": "Anfrage-Anzahl"
 }
