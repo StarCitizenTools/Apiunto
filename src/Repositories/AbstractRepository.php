@@ -33,6 +33,8 @@ use Wikimedia\ObjectCache\BagOStuff;
 abstract class AbstractRepository {
 	public const PROP_KEY = 'apiuntocache';
 	public const PROP_KEY_CACHE_TIME = 'apiuntocachetime';
+	public const PROP_KEY_CACHE_EXPIRES = 'apiuntocacheexpires';
+	private const DEFAULT_CACHE_DURATION = 86400;
 
 	/**
 	 * @var Client
@@ -131,7 +133,7 @@ abstract class AbstractRepository {
 
 		$value = $this->bagOStuff->getWithSetCallback(
 			$this->makeCacheKey(),
-			$this->sourceConfig['cacheDuration'] ?? 86400,
+			$this->sourceConfig['cacheDuration'] ?? self::DEFAULT_CACHE_DURATION,
 			$callback
 		);
 
@@ -158,5 +160,12 @@ abstract class AbstractRepository {
 		wfDebugLog( 'Apiunto', sprintf( 'Key is %s', $key ) );
 
 		return $key;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getCacheDuration(): int {
+		return (int)( $this->sourceConfig['cacheDuration'] ?? self::DEFAULT_CACHE_DURATION );
 	}
 }

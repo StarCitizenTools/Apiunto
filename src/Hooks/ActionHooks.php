@@ -39,7 +39,11 @@ class ActionHooks implements InfoActionHook  {
 
 		$properties = $this->pageProps->getProperties(
 			$context->getTitle(),
-			[ AbstractRepository::PROP_KEY, AbstractRepository::PROP_KEY_CACHE_TIME ]
+			[
+				AbstractRepository::PROP_KEY,
+				AbstractRepository::PROP_KEY_CACHE_TIME,
+				AbstractRepository::PROP_KEY_CACHE_EXPIRES
+			]
 		);
 
 		$properties = array_shift( $properties );
@@ -59,6 +63,13 @@ class ActionHooks implements InfoActionHook  {
 			$pageInfo['header-apiunto'][] = [
 				$context->msg( 'apiunto-cache-time-info-label' ),
 				$context->getLanguage()->timeanddate( $properties[ AbstractRepository::PROP_KEY_CACHE_TIME ], true, true, true )
+			];
+		}
+
+		if ( isset( $properties[ AbstractRepository::PROP_KEY_CACHE_EXPIRES ] ) ) {
+			$pageInfo['header-apiunto'][] = [
+				$context->msg( 'apiunto-cache-expires-info-label' ),
+				$context->getLanguage()->timeanddate( $properties[ AbstractRepository::PROP_KEY_CACHE_EXPIRES ], true, true, true )
 			];
 		}
 	}
