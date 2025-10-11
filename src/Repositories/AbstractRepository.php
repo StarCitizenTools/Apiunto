@@ -50,6 +50,11 @@ abstract class AbstractRepository {
 	protected array $sourceConfig;
 
 	/**
+	 * @var string
+	 */
+	protected string $sourceName;
+
+	/**
 	 * @var Config
 	 */
 	private Config $config;
@@ -63,11 +68,13 @@ abstract class AbstractRepository {
 	 * AbstractRepository constructor.
 	 *
 	 * @param Client $client Request Client
+	 * @param string $sourceName
 	 * @param array $sourceConfig
-	 * @param null|array $options Request options gets appended to the request url
+	 * @param array|null $options Request options gets appended to the request url
 	 */
-	public function __construct( Client $client, array $sourceConfig, $options = null ) {
+	public function __construct( Client $client, string $sourceName, array $sourceConfig, ?array $options = null ) {
 		$this->client = $client;
+		$this->sourceName = $sourceName;
 		$this->sourceConfig = $sourceConfig;
 
 		if ( is_array( $options ) ) {
@@ -148,16 +155,36 @@ abstract class AbstractRepository {
 	 * @return string
 	 */
 	public function makeCacheKey(): string {
+		$fullUrl = $this->getFullUrl();
+
 		$key = $this->bagOStuff->makeKey(
 			'ext',
 			self::PROP_KEY,
-			...(array)( $this->options[ ApiuntoLuaLibrary::IDENTIFIER ] ),
-			...array_values( $this->options[ ApiuntoLuaLibrary::QUERY_PARAMS ] ),
+			$fullUrl
 		);
 
 		wfDebugLog( 'Apiunto', sprintf( 'Key is %s', $key ) );
 
 		return $key;
+	}
+
+	private function getFullUrl(): string {
+		$queryString = $this->buildQueryString();
+
+		$baseUrl = rtrim( $this->sourceConfig['baseUrl'], '/' );
+		$identifier = ltrim( $this->options[ApiuntoLuaLibrary::IDENTIFIER], '/' );
+		$fullUrl = $baseUrl . '/' . $identifier;
+		if ( $queryString ) {
+			$fullUrl .= '?' . $queryString;
+		}
+
+		return $fullUrl;
+	}
+
+	private function buildQueryString(): string {
+		$queryParams = $this->options[ ApiuntoLuaLibrary::QUERY_PARAMS ];
+		ksort( $queryParams );
+		return http_build_query( $queryParams );
 	}
 
 	/**
