@@ -108,7 +108,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 
 		$client = $this->createGuzzleClient( $sourceConfig );
 
-		$repository = new RawRepository( $client, $sourceConfig, [
+		$repository = new RawRepository( $client, $sourceName, $sourceConfig, [
 			self::IDENTIFIER => $identifier,
 			self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
 		] );
