@@ -34,34 +34,8 @@ abstract class AbstractRepository {
 	public const PROP_KEY = 'apiuntocache';
 	private const DEFAULT_CACHE_DURATION = 86400;
 
-	/**
-	 * @var Client
-	 */
-	protected Client $client;
-
-	/**
-	 * @var array|null
-	 */
-	protected $options;
-
-	/**
-	 * @var array
-	 */
-	protected array $sourceConfig;
-
-	/**
-	 * @var string
-	 */
-	protected string $sourceName;
-
-	/**
-	 * @var Config
-	 */
 	private Config $config;
 
-	/**
-	 * @var BagOStuff
-	 */
 	private BagOStuff $bagOStuff;
 
 	/**
@@ -72,15 +46,12 @@ abstract class AbstractRepository {
 	 * @param array $sourceConfig
 	 * @param array|null $options Request options gets appended to the request url
 	 */
-	public function __construct( Client $client, string $sourceName, array $sourceConfig, ?array $options = null ) {
-		$this->client = $client;
-		$this->sourceName = $sourceName;
-		$this->sourceConfig = $sourceConfig;
-
-		if ( is_array( $options ) ) {
-			$this->options = $options;
-		}
-
+	public function __construct(
+		protected readonly Client $client,
+		protected readonly string $sourceName,
+		protected readonly array $sourceConfig,
+		protected ?array $options = null
+	) {
 		$services = MediaWikiServices::getInstance();
 		$this->config = $services->getMainConfig();
 		$this->bagOStuff = $services->getObjectCacheFactory()->getLocalClusterInstance();
