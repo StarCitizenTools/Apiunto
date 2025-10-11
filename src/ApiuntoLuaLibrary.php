@@ -44,6 +44,8 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	/** @var string */
 	public const QUERY_PARAMS = 'query';
 
+	private static array $requestCache = [];
+
 	/**
 	 * Registers the callable lua methods.
 	 */
@@ -111,7 +113,15 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
 		] );
 
-		$response = $repository->getRaw();
+		$cacheKey = $repository->makeCacheKey();
+
+		if ( isset( self::$requestCache[$cacheKey] ) ) {
+			$response = self::$requestCache[$cacheKey];
+		} else {
+			$response = $repository->getRaw();
+			self::$requestCache[$cacheKey] = $response;
+		}
+
 		$this->writeCachePropertyKey( $repository, $sourceName );
 
 		return [ $response ];
@@ -202,12 +212,26 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			$caches = [];
 		}
 
-		$caches[] = [
-			'source' => $sourceName,
-			'key' => $repository->makeCacheKey(),
-			'time' => time(),
-			'expires' => time() + $repository->getCacheDuration(),
-		];
+		$cacheKey = $repository->makeCacheKey();
+		$found = false;
+		foreach ( $caches as &$cache ) {
+			if ( $cache['key'] === $cacheKey ) {
+				$cache['count'] = ( $cache['count'] ?? 1 ) + 1;
+				$found = true;
+				break;
+			}
+		}
+		unset( $cache );
+
+		if ( !$found ) {
+			$caches[] = [
+				'source' => $sourceName,
+				'key' => $cacheKey,
+				'time' => time(),
+				'expires' => time() + $repository->getCacheDuration(),
+				'count' => 1,
+			];
+		}
 
 		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, json_encode( $caches ) );
 	}
