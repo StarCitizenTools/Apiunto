@@ -22,11 +22,10 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\Apiunto\Repositories;
 
 use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\Apiunto\ApiuntoLuaLibrary;
+use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\ObjectCache\BagOStuff;
 
@@ -41,13 +40,13 @@ abstract class AbstractRepository {
 	/**
 	 * AbstractRepository constructor.
 	 *
-	 * @param Client $client Request Client
+	 * @param HttpRequestFactory $requestFactory
 	 * @param string $sourceName
 	 * @param array $sourceConfig
 	 * @param array|null $options Request options gets appended to the request url
 	 */
 	public function __construct(
-		protected readonly Client $client,
+		protected readonly HttpRequestFactory $requestFactory,
 		protected readonly string $sourceName,
 		protected readonly array $sourceConfig,
 		protected ?array $options = null
@@ -68,22 +67,28 @@ abstract class AbstractRepository {
 	 * Perform the request
 	 *
 	 * @return string
-	 * @throws JsonException|GuzzleException
+	 * @throws JsonException
 	 */
 	protected function request(): string {
 		$callback = function () {
 			wfDebugLog( 'Apiunto', 'Retrieving Data from API' );
 
 			try {
-				$url = $this->options[ ApiuntoLuaLibrary::IDENTIFIER ];
+				$req = $this->requestFactory->create( $this->getFullUrl(), [
+					'timeout' => $this->sourceConfig['timeout'] ?? 5
+				] );
+				$req->setHeader( 'User-Agent', 'MediaWiki/ext-apiunto-' . MW_VERSION );
+				if ( !empty( $this->sourceConfig['token'] ) ) {
+					$req->setHeader( 'Authorization', 'Bearer ' . $this->sourceConfig['token'] );
+				}
+				$status = $req->execute();
 
-				$response = $this->client->get(
-					$url,
-					[
-						'query' => $this->options[ ApiuntoLuaLibrary::QUERY_PARAMS ]
-					]
-				);
-			} catch ( GuzzleException | Exception $e ) {
+				if ( !$status->isOK() ) {
+					return false;
+				}
+
+				return $req->getContent();
+			} catch ( Exception $e ) {
 				wfLogWarning( sprintf( '[Apiunto] Error retrieving API data: %s', $e->getMessage() ) );
 				wfDebugLog( 'Apiunto', sprintf( 'Error retrieving API data: %s', $e->getMessage() ) );
 
@@ -98,8 +103,6 @@ abstract class AbstractRepository {
 
 				return false;
 			}
-
-			return (string)$response->getBody();
 		};
 
 		if ( $this->config->get( 'ApiuntoEnableCache' ) !== true ) {

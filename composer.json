@@ -5,8 +5,7 @@
 	"description": "Lua Extension for MediaWiki to access the Star Citizen Wiki API.",
 	"license": "MIT",
 	"require": {
-		"php": ">=8.0",
-		"guzzlehttp/guzzle": "^7.4.0"
+		"php": ">=8.0"
 	},
 	"require-dev": {
 		"mediawiki/mediawiki-codesniffer": "v40.0.0",
