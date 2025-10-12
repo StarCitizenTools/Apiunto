@@ -27,7 +27,7 @@ use MediaWiki\Config\Config;
 use MediaWiki\Extension\Apiunto\ApiuntoLuaLibrary;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MediaWikiServices;
-use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 abstract class AbstractRepository {
 	public const PROP_KEY = 'apiuntocache';
@@ -36,7 +36,7 @@ abstract class AbstractRepository {
 	private ?string $cacheKey = null;
 	private Config $config;
 
-	private BagOStuff $bagOStuff;
+	private WANObjectCache $cache;
 
 	/**
 	 * AbstractRepository constructor.
@@ -54,7 +54,7 @@ abstract class AbstractRepository {
 	) {
 		$services = MediaWikiServices::getInstance();
 		$this->config = $services->getMainConfig();
-		$this->bagOStuff = $services->getObjectCacheFactory()->getLocalClusterInstance();
+		$this->cache = $services->getMainWANObjectCache();
 	}
 
 	/**
@@ -96,7 +96,7 @@ abstract class AbstractRepository {
 				wfDebugLog( 'Apiunto', sprintf( 'Error retrieving API data: %s', $e->getMessage() ) );
 
 				$key = $this->makeCacheKey();
-				$stale = $this->bagOStuff->get( $key );
+				$stale = $this->cache->get( $key );
 
 				if ( $stale !== false ) {
 					wfLogWarning( sprintf( '[Apiunto] Returning stale content for key %s', $key ) );
@@ -114,7 +114,7 @@ abstract class AbstractRepository {
 		}
 
 		$key = $this->makeCacheKey();
-		$value = $this->bagOStuff->getWithSetCallback(
+		$value = $this->cache->getWithSetCallback(
 			$key,
 			$this->sourceConfig['cacheDuration'] ?? self::DEFAULT_CACHE_DURATION,
 			$callback
@@ -143,7 +143,7 @@ abstract class AbstractRepository {
 		}
 		$fullUrl = $this->getFullUrl();
 
-		$this->cacheKey = $this->bagOStuff->makeKey(
+		$this->cacheKey = $this->cache->makeKey(
 			'ext',
 			self::PROP_KEY,
 			$fullUrl
