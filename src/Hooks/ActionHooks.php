@@ -66,8 +66,8 @@ class ActionHooks implements InfoActionHook  {
 	private function buildCacheInfoList( array $cache, IContextSource $context ): string {
 		$items = [
 			$this->buildCacheKeyItem( $cache, $context ),
-			$this->buildCacheTimeItem( $cache, $context ),
-			$this->buildCacheExpiresItem( $cache, $context ),
+			// $this->buildCacheTimeItem( $cache, $context ),
+			// $this->buildCacheExpiresItem( $cache, $context ),
 		];
 
 		if ( isset( $cache['count'] ) && $cache['count'] > 1 ) {

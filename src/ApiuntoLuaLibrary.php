@@ -207,8 +207,6 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			$caches[] = [
 				'source' => $sourceName,
 				'key' => $cacheKey,
-				'time' => time(),
-				'expires' => time() + $repository->getCacheDuration(),
 				'count' => 1,
 			];
 		}
