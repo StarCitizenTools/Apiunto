@@ -1,7 +1,7 @@
 local Apiunto = {}
 local php
 
-function Apiunto.get( source, uri, args )
+function Apiunto.fetch( source, uri, args )
     if source == nil or type( source ) ~= 'string' or source == '' then
         error( 'Source name is missing or invalid.', 2 )
     end
@@ -12,7 +12,7 @@ function Apiunto.get( source, uri, args )
         error( 'Args must be a table or nil.', 2)
     end
 
-    return php.get_raw( source, uri, args or {} )
+    return php.fetch( source, uri, args or {} )
 end
 
 function Apiunto.setupInterface( options )
