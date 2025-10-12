@@ -21,7 +21,6 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\Apiunto;
 
-use GuzzleHttp\Client;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Extension\Apiunto\Repositories\RawRepository;
@@ -106,12 +105,15 @@ class ApiuntoLuaLibrary extends LibraryBase {
 		}
 		$sourceConfig = $sources[$sourceName];
 
-		$client = $this->createGuzzleClient( $sourceConfig );
-
-		$repository = new RawRepository( $client, $sourceName, $sourceConfig, [
-			self::IDENTIFIER => $identifier,
-			self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
-		] );
+		$repository = new RawRepository(
+			MediaWikiServices::getInstance()->getHttpRequestFactory(),
+			$sourceName,
+			$sourceConfig,
+			[
+				self::IDENTIFIER => $identifier,
+				self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
+			]
+		);
 
 		$cacheKey = $repository->makeCacheKey();
 
@@ -125,28 +127,6 @@ class ApiuntoLuaLibrary extends LibraryBase {
 		$this->writeCachePropertyKey( $repository, $sourceName );
 
 		return [ $response ];
-	}
-
-	/**
-	 * Creates a new Guzzle client instance based on the source configuration.
-	 *
-	 * @param array $sourceConfig The configuration for the API source.
-	 * @return Client A new GuzzleHttp client.
-	 */
-	private function createGuzzleClient( array $sourceConfig ): Client {
-		$headers = [
-			'User-Agent' => 'MediaWiki/ext-apiunto-' . MW_VERSION,
-		];
-
-		if ( !empty( $sourceConfig['token'] ) ) {
-			$headers['Authorization'] = "Bearer {$sourceConfig['token']}";
-		}
-
-		return new Client( [
-			'base_uri' => $sourceConfig['baseUrl'],
-			'timeout' => $sourceConfig['timeout'] ?? 5,
-			'headers' => $headers,
-		] );
 	}
 
 	/**
