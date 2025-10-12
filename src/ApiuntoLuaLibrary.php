@@ -184,8 +184,6 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	 * @param string $cacheKey The cache key.
 	 */
 	private function writeCachePropertyKey( string $sourceName, string $cacheKey ): void {
-		wfDebugLog( 'Apiunto', 'Writing page prop' );
-
 		$parserOutput = $this->getParser()->getOutput();
 
 		$propValue = $parserOutput->getPageProperty( AbstractRepository::PROP_KEY );
