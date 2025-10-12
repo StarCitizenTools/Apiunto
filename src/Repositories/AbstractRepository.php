@@ -33,6 +33,7 @@ abstract class AbstractRepository {
 	public const PROP_KEY = 'apiuntocache';
 	private const DEFAULT_CACHE_DURATION = 86400;
 
+	private ?string $cacheKey = null;
 	private Config $config;
 
 	private BagOStuff $bagOStuff;
@@ -129,17 +130,20 @@ abstract class AbstractRepository {
 	 * @return string
 	 */
 	public function makeCacheKey(): string {
+		if ( $this->cacheKey !== null ) {
+			return $this->cacheKey;
+		}
 		$fullUrl = $this->getFullUrl();
 
-		$key = $this->bagOStuff->makeKey(
+		$this->cacheKey = $this->bagOStuff->makeKey(
 			'ext',
 			self::PROP_KEY,
 			$fullUrl
 		);
 
-		wfDebugLog( 'Apiunto', sprintf( 'Key is %s', $key ) );
+		wfDebugLog( 'Apiunto', sprintf( 'Key is %s', $this->cacheKey ) );
 
-		return $key;
+		return $this->cacheKey;
 	}
 
 	private function getFullUrl(): string {

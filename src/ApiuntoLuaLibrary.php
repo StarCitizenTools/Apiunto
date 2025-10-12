@@ -119,12 +119,14 @@ class ApiuntoLuaLibrary extends LibraryBase {
 
 		if ( isset( self::$requestCache[$cacheKey] ) ) {
 			$response = self::$requestCache[$cacheKey];
+			wfDebugLog( 'Apiunto', sprintf( 'Request cache HIT: %s', $cacheKey ) );
 		} else {
 			$response = $repository->getRaw();
 			self::$requestCache[$cacheKey] = $response;
+			wfDebugLog( 'Apiunto', sprintf( 'Request cache MISS: %s', $cacheKey ) );
 		}
 
-		$this->writeCachePropertyKey( $repository, $sourceName );
+		$this->writeCachePropertyKey( $sourceName, $cacheKey );
 
 		return [ $response ];
 	}
@@ -178,10 +180,10 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	/**
 	 * Writes the cache key to the page properties for purging.
 	 *
-	 * @param AbstractRepository $repository The repository used for the request.
 	 * @param string $sourceName The name of the API source.
+	 * @param string $cacheKey The cache key.
 	 */
-	private function writeCachePropertyKey( AbstractRepository $repository, string $sourceName ): void {
+	private function writeCachePropertyKey( string $sourceName, string $cacheKey ): void {
 		wfDebugLog( 'Apiunto', 'Writing page prop' );
 
 		$parserOutput = $this->getParser()->getOutput();
@@ -192,7 +194,6 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			$caches = [];
 		}
 
-		$cacheKey = $repository->makeCacheKey();
 		$found = false;
 		foreach ( $caches as &$cache ) {
 			if ( $cache['key'] === $cacheKey ) {
