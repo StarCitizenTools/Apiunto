@@ -71,7 +71,9 @@ abstract class AbstractRepository {
 	 * @throws JsonException
 	 */
 	protected function request(): string {
-		$callback = function () {
+		$cacheMiss = false;
+		$callback = function () use ( &$cacheMiss ) {
+			$cacheMiss = true;
 			wfDebugLog( 'Apiunto', 'Retrieving Data from API' );
 
 			try {
@@ -107,15 +109,21 @@ abstract class AbstractRepository {
 		};
 
 		if ( $this->config->get( 'ApiuntoEnableCache' ) !== true ) {
-			wfDebugLog( 'Apiunto', 'Cache is disabled' );
+			wfDebugLog( 'Apiunto', 'Object cache is disabled' );
 			return (string)$callback();
 		}
 
+		$key = $this->makeCacheKey();
 		$value = $this->bagOStuff->getWithSetCallback(
-			$this->makeCacheKey(),
+			$key,
 			$this->sourceConfig['cacheDuration'] ?? self::DEFAULT_CACHE_DURATION,
 			$callback
 		);
+
+		wfDebugLog( 'Apiunto', sprintf(
+			$cacheMiss ? 'Object cache MISS: %s' : 'Object cache HIT: %s',
+			$key
+		) );
 
 		if ( $value === false ) {
 			return 'Could not retrieve API Data';
@@ -140,8 +148,6 @@ abstract class AbstractRepository {
 			self::PROP_KEY,
 			$fullUrl
 		);
-
-		wfDebugLog( 'Apiunto', sprintf( 'Key is %s', $this->cacheKey ) );
 
 		return $this->cacheKey;
 	}
