@@ -51,7 +51,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	 */
 	public function register(): array {
 		$lib = [
-			'get_raw' => [ $this, 'getRaw' ],
+			'fetch' => [ $this, 'getRaw' ],
 		];
 
 		return $this->getEngine()->registerInterface(
