@@ -5,7 +5,7 @@
 			"Alistair3149"
 		]
 	},
-	"apiunto-desc": "Lua extension for the Star Citizen Wiki Api",
+	"apiunto-desc": "Lua Extension for MediaWiki to access the REST APIs",
 	"pageinfo-header-apiunto": "Apiunto",
 	"apiunto-cache-key-info-label": "Key",
 	"apiunto-cache-time-info-label": "Cached on",
