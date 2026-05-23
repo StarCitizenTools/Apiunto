@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "**"
+      - "!dependabot/**"
+      - "!release-please--branches--**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    outputs:
+      php: ${{ steps.filter.outputs.php_any_changed }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: tj-actions/changed-files@v47
+        id: filter
+        with:
+          files_yaml: |
+            php:
+              - src/**/*.php
+              - maintenance/**/*.php
+              - tests/**/*.php
+              - extension.json
+              - composer.json
+              - composer.lock
+              - .phan/config.php
+              - .phpcs.xml
+              - .github/workflows/ci.yml
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/lint.yml@main
+    with:
+      lint-php: true
+      runner: ubuntu-24.04-arm
+
+  analyze-php:
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/analyze-php.yml@main
+    with:
+      project-type: extension
+      project-name: Apiunto
+      extra-extensions: Scribunto
+      runner: ubuntu-24.04-arm
+
+  test-php:
+    needs: changes
+    if: needs.changes.outputs.php == 'true'
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/test-php.yml@main
+    with:
+      project-type: extension
+      project-name: Apiunto
+      extra-extensions: Scribunto
+      runner: ubuntu-24.04-arm
