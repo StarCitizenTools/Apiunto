@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-Please report all vulnerability through GitHub [here](https://github.com/StarCitizenTools/Apiunto/security/advisories/new).
+Please report all vulnerability through GitHub [here](https://github.com/StarCitizenTools/mediawiki-extensions-Apiunto/security/advisories/new).
 
 The vulnerability will be looked into within a week.
 
