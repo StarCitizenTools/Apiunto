@@ -5,7 +5,7 @@
 			"Alistair3149"
 		]
 	},
-	"apiunto-desc": "{{desc|what=extension|name=Apiunto|url=https://github.com/StarCitizenWiki/Apiunto}}",
+	"apiunto-desc": "{{desc|what=extension|name=Apiunto|url=https://github.com/StarCitizenTools/Apiunto}}",
 	"pageinfo-header-apiunto": "Apiunto",
 	"apiunto-cache-key-info-label": "The cache key for the Apiunto Extension",
 	"apiunto-cache-time-info-label": "The cache time for the Apiunto Extension",
