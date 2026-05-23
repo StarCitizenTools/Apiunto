@@ -1,7 +1,7 @@
 {
 	"name": "starcitizentools/apiunto",
 	"type": "mediawiki-extension",
-	"description": "Lua Extension for MediaWiki to access the Star Citizen Wiki API.",
+	"description": "Lua Extension for MediaWiki to access the REST APIs",
 	"license": "MIT",
 	"require": {
 		"php": ">=8.1",
