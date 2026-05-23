@@ -5,25 +5,45 @@
 	"description": "Lua Extension for MediaWiki to access the Star Citizen Wiki API.",
 	"license": "MIT",
 	"require": {
-		"php": ">=8.0"
+		"php": ">=8.0",
+		"composer/installers": ">=1.0.1"
 	},
 	"require-dev": {
-		"mediawiki/mediawiki-codesniffer": "v40.0.0",
-		"mediawiki/mediawiki-phan-config": "0.12.0",
-		"mediawiki/minus-x": "1.1.1",
-		"php-parallel-lint/php-console-highlighter": "0.5.0",
-		"php-parallel-lint/php-parallel-lint": "v1.3.2"
+		"mediawiki/mediawiki-codesniffer": "51.0.0",
+		"mediawiki/mediawiki-phan-config": "0.20.0",
+		"mediawiki/minus-x": "2.0.1",
+		"php-parallel-lint/php-console-highlighter": "1.0.0",
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
 	},
 	"scripts": {
-		"test": [
-			"parallel-lint . --exclude vendor --exclude node_modules",
-			"phpcs -p -s",
-			"minus-x check ."
-		],
 		"fix": [
 			"minus-x fix .",
-			"phpcbf src/",
-			"phpcbf maintenance/"
+			"phpcbf"
+		],
+		"test": [
+			"parallel-lint . --exclude node_modules --exclude vendor",
+			"@phpcs",
+			"minus-x check ."
+		],
+		"phan": "phan -d . --long-progress-bar",
+		"phpcs": [
+			"phpcs --config-set ignore_warnings_on_exit 1",
+			"phpcs -sp --cache"
+		],
+		"phpunit": "cd ../../ && composer phpunit -- extensions/Apiunto/tests/phpunit/",
+		"preflight": [
+			"@test",
+			"@phan",
+			"@phpunit"
 		]
+	},
+	"extra": {
+		"installer-name": "Apiunto"
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
 	}
 }
