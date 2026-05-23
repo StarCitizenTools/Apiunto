@@ -29,7 +29,7 @@ class PurgeCache extends Maintenance {
 		$dryRun = $this->getOption( 'dry-run' ) !== null;
 
 		$purger->purgeAll(
-			function( string $message ) {
+			function ( string $message ) {
 				$this->output( "$message\n" );
 			},
 			$dryRun,

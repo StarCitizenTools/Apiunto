@@ -14,6 +14,9 @@ use MediaWikiUnitTestCase;
  */
 class AbstractRepositoryTest extends MediaWikiUnitTestCase {
 
+	/**
+	 * @coversNothing
+	 */
 	public function testPropKeyConstant(): void {
 		$this->assertSame( 'apiuntocache', AbstractRepository::PROP_KEY );
 	}

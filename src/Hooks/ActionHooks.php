@@ -24,14 +24,15 @@ namespace MediaWiki\Extension\Apiunto\Hooks;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Hook\InfoActionHook;
-use MediaWiki\Page\PageProps;
 use MediaWiki\Html\Html;
+use MediaWiki\Page\PageProps;
 
-class ActionHooks implements InfoActionHook  {
+class ActionHooks implements InfoActionHook {
 
 	public function __construct(
 		private readonly PageProps $pageProps
-	) {}
+	) {
+	}
 
 	/**
 	 * @inheritDoc
@@ -51,7 +52,7 @@ class ActionHooks implements InfoActionHook  {
 		}
 
 		$caches = json_decode( (string)$prop, true );
-		if ( !is_array( $caches ) || empty( $caches ) ) {
+		if ( !is_array( $caches ) || $caches === [] ) {
 			return;
 		}
 
@@ -78,15 +79,15 @@ class ActionHooks implements InfoActionHook  {
 	}
 
 	private function buildCacheKeyItem( array $cache, IContextSource $context ): string {
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-key-info-label' )->escaped() . ': ' );
-		$value = Html::element( 'code', [], htmlspecialchars( $cache['key'] ) );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-key-info-label' )->text() . ': ' );
+		$value = Html::element( 'code', [], $cache['key'] );
 
 		return Html::rawElement( 'li', [], $label . $value );
 	}
 
 	private function buildCacheTimeItem( array $cache, IContextSource $context ): string {
 		$lang = $context->getLanguage();
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-time-info-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-time-info-label' )->text() . ': ' );
 		$value = Html::element( 'time', [], $lang->timeanddate( $cache['time'], true ) );
 
 		return Html::rawElement( 'li', [], $label . $value );
@@ -94,14 +95,14 @@ class ActionHooks implements InfoActionHook  {
 
 	private function buildCacheExpiresItem( array $cache, IContextSource $context ): string {
 		$lang = $context->getLanguage();
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-expires-info-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-expires-info-label' )->text() . ': ' );
 		$value = Html::element( 'time', [], $lang->timeanddate( $cache['expires'], true ) );
 
 		return Html::rawElement( 'li', [], $label . $value );
 	}
 
 	private function buildRequestCountItem( array $cache, IContextSource $context ): string {
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-request-count-info-label' )->escaped() . ': ' );
+		$label = Html::element( 'strong', [], $context->msg( 'apiunto-request-count-info-label' )->text() . ': ' );
 		$value = htmlspecialchars( (string)$cache['count'] );
 
 		return Html::rawElement( 'li', [], $label . $value );

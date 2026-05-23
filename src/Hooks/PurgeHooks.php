@@ -28,7 +28,8 @@ class PurgeHooks implements ArticlePurgeHook {
 
 	public function __construct(
 		private readonly CachePurger $cachePurger
-	) {}
+	) {
+	}
 
 	/**
 	 * @inheritDoc

@@ -44,13 +44,13 @@ abstract class AbstractRepository {
 	 * @param HttpRequestFactory $requestFactory
 	 * @param string $sourceName
 	 * @param array $sourceConfig
-	 * @param array|null $options Request options gets appended to the request url
+	 * @param array $options Request options gets appended to the request url
 	 */
 	public function __construct(
 		protected readonly HttpRequestFactory $requestFactory,
 		protected readonly string $sourceName,
 		protected readonly array $sourceConfig,
-		protected ?array $options = null
+		protected array $options = []
 	) {
 		$services = MediaWikiServices::getInstance();
 		$this->config = $services->getMainConfig();
@@ -72,14 +72,15 @@ abstract class AbstractRepository {
 	 */
 	protected function request(): string {
 		$cacheMiss = false;
-		$callback = function () use ( &$cacheMiss ) {
+		$caller = __METHOD__;
+		$callback = function () use ( &$cacheMiss, $caller ) {
 			$cacheMiss = true;
 			wfDebugLog( 'Apiunto', 'Retrieving Data from API' );
 
 			try {
 				$req = $this->requestFactory->create( $this->getFullUrl(), [
 					'timeout' => $this->sourceConfig['timeout'] ?? 5
-				] );
+				], $caller );
 				$req->setHeader( 'User-Agent', 'MediaWiki/ext-apiunto-' . MW_VERSION );
 				if ( !empty( $this->sourceConfig['token'] ) ) {
 					$req->setHeader( 'Authorization', 'Bearer ' . $this->sourceConfig['token'] );

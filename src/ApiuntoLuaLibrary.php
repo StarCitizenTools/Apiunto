@@ -24,9 +24,8 @@ namespace MediaWiki\Extension\Apiunto;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Extension\Apiunto\Repositories\RawRepository;
-use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
-use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaEngine;
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -92,7 +91,8 @@ class ApiuntoLuaLibrary extends LibraryBase {
 				// Lua will get an empty result if this leads to an invalid API call,
 				// or the API might handle default parameters.
 				wfLogWarning( sprintf(
-					'Apiunto: Call to getRaw() for identifier "%s" expected an array for options (third argument), got %s. Proceeding with empty options.',
+					'Apiunto: Call to getRaw() for identifier "%s" expected an array for options ' .
+						'(third argument), got %s. Proceeding with empty options.',
 					$identifier,
 					gettype( $args[2] )
 				) );
