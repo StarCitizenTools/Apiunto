@@ -13,9 +13,6 @@
 		"MediaWiki": ">= 1.43.0",
 		"extensions": {
 			"Scribunto": "*"
-		},
-		"platform": {
-			"php": ">=8.1"
 		}
 	},
 	"MessagesDirs": {
