@@ -14,7 +14,8 @@ class CachePurger {
 
 	public function __construct(
 		private readonly IConnectionProvider $dbProvider
-	) {}
+	) {
+	}
 
 	public function purgeAll( callable $logger, bool $dryRun = false, int $batchSize = 150 ): void {
 		$iterator = new BatchRowIterator(
@@ -76,7 +77,8 @@ class CachePurger {
 			[
 				'pp_page' => $pageId,
 				'pp_propname' => AbstractRepository::PROP_KEY,
-			]
+			],
+			__METHOD__
 		);
 	}
 }
