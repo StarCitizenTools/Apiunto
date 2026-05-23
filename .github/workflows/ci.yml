@@ -63,5 +63,4 @@ jobs:
     with:
       project-type: extension
       project-name: Apiunto
-      extra-extensions: Scribunto
       runner: ubuntu-24.04-arm
