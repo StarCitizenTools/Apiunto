@@ -142,15 +142,25 @@ abstract class AbstractRepository {
 		if ( $this->cacheKey !== null ) {
 			return $this->cacheKey;
 		}
-		$fullUrl = $this->getFullUrl();
 
+		// Hash the request URL so the key stays short and bounded. The readable URL is
+		// recorded separately in the page property for display on action=info.
 		$this->cacheKey = $this->cache->makeKey(
 			'ext',
 			self::PROP_KEY,
-			$fullUrl
+			sha1( $this->getRequestUrl() )
 		);
 
 		return $this->cacheKey;
+	}
+
+	/**
+	 * The full request URL (base URL + identifier + query string).
+	 *
+	 * @return string
+	 */
+	public function getRequestUrl(): string {
+		return $this->getFullUrl();
 	}
 
 	private function getFullUrl(): string {
