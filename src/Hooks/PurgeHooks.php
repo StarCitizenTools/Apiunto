@@ -34,7 +34,7 @@ class PurgeHooks implements ArticlePurgeHook {
 	/**
 	 * @inheritDoc
 	 */
-	public function onArticlePurge( $wikiPage ) {
+	public function onArticlePurge( $wikiPage ): void {
 		wfDebugLog( 'Apiunto', 'Running Purge Hook' );
 
 		$this->cachePurger->purgeByPageId( $wikiPage->getId() );
