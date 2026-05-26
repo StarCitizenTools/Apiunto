@@ -7,8 +7,14 @@
 	},
 	"apiunto-desc": "{{desc|what=extension|name=Apiunto|url=https://github.com/StarCitizenTools/mediawiki-extensions-Apiunto}}",
 	"pageinfo-header-apiunto": "Apiunto",
+	"apiunto-cache-status-info-label": "Label for the cache status row in the Apiunto section on action=info.",
+	"apiunto-cache-status-cached": "Cache status value shown when the response is currently cached.",
+	"apiunto-cache-status-not-cached": "Cache status value shown when the response is not currently cached.",
+	"apiunto-cache-status-disabled": "Cache status value shown when response caching is disabled ($wgApiuntoEnableCache is false).",
+	"apiunto-cache-url-info-label": "Label for the request URL row in the Apiunto section on action=info.",
 	"apiunto-cache-key-info-label": "The cache key for the Apiunto Extension",
 	"apiunto-cache-time-info-label": "The cache time for the Apiunto Extension",
 	"apiunto-cache-expires-info-label": "The cache expiry for the Apiunto Extension",
+	"apiunto-cache-duration-info-label": "Label for the configured cache duration row in the Apiunto section on action=info.",
 	"apiunto-request-count-info-label": "The request count for the Apiunto Extension"
 }
