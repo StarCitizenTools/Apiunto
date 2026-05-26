@@ -60,28 +60,29 @@ class CachePurger {
 			);
 		}
 
-		if ( $propertyValue ) {
-			$caches = json_decode( (string)$propertyValue, true );
-			if ( is_array( $caches ) ) {
-				foreach ( $caches as $cacheInfo ) {
-					if ( isset( $cacheInfo['key'] ) ) {
-						// HOLDOFF_TTL_NONE: cached responses come from an external API, not a
-						// DB replica, so there is no replica-lag window to guard against. Use a
-						// non-volatile purge so the next fetch can repopulate the cache immediately.
-						$this->cache->delete( $cacheInfo['key'], WANObjectCache::HOLDOFF_TTL_NONE );
-					}
-				}
+		if ( !$propertyValue ) {
+			return;
+		}
+
+		$caches = json_decode( (string)$propertyValue, true );
+		if ( !is_array( $caches ) ) {
+			return;
+		}
+
+		foreach ( $caches as $cacheInfo ) {
+			if ( isset( $cacheInfo['key'] ) ) {
+				// HOLDOFF_TTL_NONE: cached responses come from an external API, not a
+				// DB replica, so there is no replica-lag window to guard against. Use a
+				// non-volatile purge so the next fetch can repopulate the cache immediately.
+				$this->cache->delete( $cacheInfo['key'], WANObjectCache::HOLDOFF_TTL_NONE );
 			}
 		}
 
-		$dbw = $this->dbProvider->getPrimaryDatabase();
-		$dbw->delete(
-			'page_props',
-			[
-				'pp_page' => $pageId,
-				'pp_propname' => AbstractRepository::PROP_KEY,
-			],
-			__METHOD__
-		);
+		// The apiuntocache page property is parser-derived metadata owned by the
+		// parse/LinksUpdate lifecycle. It is deliberately left untouched here: it records
+		// which cache keys the page populates (used for purging and shown on action=info),
+		// is rewritten on every reparse, and a plain purge does not trigger a LinksUpdate to
+		// restore it. Deleting it would make the keys un-purgeable and hide the info section
+		// until the next edit.
 	}
 }

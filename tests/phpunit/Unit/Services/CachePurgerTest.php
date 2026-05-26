@@ -9,7 +9,6 @@ use MediaWikiUnitTestCase;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
@@ -31,11 +30,10 @@ class CachePurgerTest extends MediaWikiUnitTestCase {
 		$wanCache->set( $key, 'cached-response', 3600 );
 		$this->assertSame( 'cached-response', $wanCache->get( $key ), 'precondition: value is cached' );
 
-		$primary = $this->createMock( IDatabase::class );
-		$primary->expects( $this->once() )->method( 'delete' );
-
 		$dbProvider = $this->createMock( IConnectionProvider::class );
-		$dbProvider->method( 'getPrimaryDatabase' )->willReturn( $primary );
+		// The apiuntocache page property is parser-owned metadata; purging must not write to it,
+		// so the primary database must never be requested.
+		$dbProvider->expects( $this->never() )->method( 'getPrimaryDatabase' );
 
 		$propertyValue = json_encode( [
 			[ 'source' => 'test', 'key' => $key, 'count' => 1 ],
@@ -64,16 +62,54 @@ class CachePurgerTest extends MediaWikiUnitTestCase {
 				[ 'source' => 'test', 'key' => $key, 'count' => 1 ],
 			] ) );
 
-		$primary = $this->createMock( IDatabase::class );
-		$primary->expects( $this->once() )->method( 'delete' );
-
 		$dbProvider = $this->createMock( IConnectionProvider::class );
 		$dbProvider->method( 'getReplicaDatabase' )->willReturn( $replica );
-		$dbProvider->method( 'getPrimaryDatabase' )->willReturn( $primary );
+		// Purging must not delete the page property, so the primary database is never used.
+		$dbProvider->expects( $this->never() )->method( 'getPrimaryDatabase' );
 
 		$purger = new CachePurger( $dbProvider, $wanCache );
 		$purger->purgeByPageId( 123 );
 
 		$this->assertFalse( $wanCache->get( $key ), 'value must be gone after purge via page_props lookup' );
+	}
+
+	/**
+	 * A property value that is not valid JSON (or does not decode to an array) must be ignored
+	 * without error and without purging anything.
+	 */
+	public function testPurgeByPageIdIgnoresMalformedPropertyValue(): void {
+		$wanCache = new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+		$key = $wanCache->makeKey( 'ext', 'apiuntocache', 'https://example.test/v1/golem' );
+		$wanCache->set( $key, 'cached-response', 3600 );
+
+		$dbProvider = $this->createMock( IConnectionProvider::class );
+		$dbProvider->expects( $this->never() )->method( 'getPrimaryDatabase' );
+
+		$purger = new CachePurger( $dbProvider, $wanCache );
+		$purger->purgeByPageId( 123, 'not valid json' );
+
+		$this->assertSame( 'cached-response', $wanCache->get( $key ), 'nothing should be purged' );
+	}
+
+	/**
+	 * Entries without a 'key' are skipped; valid sibling entries are still purged.
+	 */
+	public function testPurgeByPageIdSkipsEntriesMissingAKey(): void {
+		$wanCache = new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+		$key = $wanCache->makeKey( 'ext', 'apiuntocache', 'https://example.test/v1/golem' );
+		$wanCache->set( $key, 'cached-response', 3600 );
+
+		$dbProvider = $this->createMock( IConnectionProvider::class );
+		$dbProvider->expects( $this->never() )->method( 'getPrimaryDatabase' );
+
+		$propertyValue = json_encode( [
+			[ 'source' => 'broken' ],
+			[ 'source' => 'test', 'key' => $key, 'count' => 1 ],
+		] );
+
+		$purger = new CachePurger( $dbProvider, $wanCache );
+		$purger->purgeByPageId( 123, $propertyValue );
+
+		$this->assertFalse( $wanCache->get( $key ), 'the valid entry must still be purged' );
 	}
 }
