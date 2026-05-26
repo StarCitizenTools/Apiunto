@@ -99,12 +99,13 @@ class CacheInfoResolver {
 		$live = [];
 		foreach ( $keys as $key ) {
 			$asOf = $info[$key][WANObjectCache::KEY_AS_OF] ?? null;
-			$curTTL = $curTTLs[$key] ?? null;
 			$ttl = $info[$key][WANObjectCache::KEY_TTL] ?? null;
-			if ( $asOf !== null && $curTTL !== null && $curTTL > 0 ) {
+			$curTTL = $curTTLs[$key] ?? null;
+			// Present and not expired: WANObjectCache clamps curTTL to 0 once a value is stale.
+			if ( $asOf !== null && $ttl !== null && $curTTL !== null && $curTTL > 0 ) {
 				$live[$key] = [
 					'cachedOn' => (int)$asOf,
-					'expiresOn' => $ttl !== null ? (int)( $asOf + $ttl ) : (int)( $asOf + $curTTL ),
+					'expiresOn' => (int)( $asOf + $ttl ),
 				];
 			}
 		}

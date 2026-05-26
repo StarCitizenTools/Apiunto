@@ -101,4 +101,30 @@ class CacheInfoResolverTest extends MediaWikiUnitTestCase {
 		$this->assertSame( CacheInfoResolver::STATUS_CACHED, $rows[0]['status'] );
 		$this->assertSame( CacheInfoResolver::STATUS_NOT_CACHED, $rows[1]['status'] );
 	}
+
+	public function testEntryMissingKeyIsNotCached(): void {
+		$resolver = new CacheInfoResolver( $this->newWanCache(), $this->newConfig( true, [] ) );
+		$rows = $resolver->resolve( [
+			[ 'source' => 'src', 'count' => 1 ],
+		] );
+
+		$this->assertNull( $rows[0]['key'] );
+		$this->assertNull( $rows[0]['url'] );
+		$this->assertSame( CacheInfoResolver::STATUS_NOT_CACHED, $rows[0]['status'] );
+	}
+
+	public function testLegacyEntryWithoutUrlStillResolves(): void {
+		// Entries written before the url field was added have no 'url'; they must still resolve.
+		$wan = $this->newWanCache();
+		$key = $wan->makeKey( 'ext', 'apiuntocache', sha1( 'legacy' ) );
+		$wan->set( $key, 'data', 3600 );
+
+		$resolver = new CacheInfoResolver( $wan, $this->newConfig( true, [] ) );
+		$rows = $resolver->resolve( [
+			[ 'source' => 'src', 'key' => $key, 'count' => 1 ],
+		] );
+
+		$this->assertNull( $rows[0]['url'] );
+		$this->assertSame( CacheInfoResolver::STATUS_CACHED, $rows[0]['status'] );
+	}
 }

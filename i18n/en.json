@@ -7,8 +7,14 @@
 	},
 	"apiunto-desc": "Lua Extension for MediaWiki to access the REST APIs",
 	"pageinfo-header-apiunto": "Apiunto",
+	"apiunto-cache-status-info-label": "Status",
+	"apiunto-cache-status-cached": "Cached",
+	"apiunto-cache-status-not-cached": "Not cached",
+	"apiunto-cache-status-disabled": "Caching disabled",
+	"apiunto-cache-url-info-label": "Request URL",
 	"apiunto-cache-key-info-label": "Key",
 	"apiunto-cache-time-info-label": "Cached on",
 	"apiunto-cache-expires-info-label": "Expires on",
+	"apiunto-cache-duration-info-label": "Cache duration",
 	"apiunto-request-count-info-label": "Request count"
 }

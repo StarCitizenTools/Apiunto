@@ -38,7 +38,8 @@
 		"ActionHooks": {
 			"class": "MediaWiki\\Extension\\Apiunto\\Hooks\\ActionHooks",
 			"services": [
-				"PageProps"
+				"PageProps",
+				"Apiunto.CacheInfoResolver"
 			]
 		},
 		"PurgeHooks": {

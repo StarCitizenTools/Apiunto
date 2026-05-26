@@ -23,6 +23,7 @@ namespace MediaWiki\Extension\Apiunto\Hooks;
 
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
+use MediaWiki\Extension\Apiunto\Services\CacheInfoResolver;
 use MediaWiki\Hook\InfoActionHook;
 use MediaWiki\Html\Html;
 use MediaWiki\Page\PageProps;
@@ -30,7 +31,8 @@ use MediaWiki\Page\PageProps;
 class ActionHooks implements InfoActionHook {
 
 	public function __construct(
-		private readonly PageProps $pageProps
+		private readonly PageProps $pageProps,
+		private readonly CacheInfoResolver $cacheInfoResolver
 	) {
 	}
 
@@ -38,73 +40,119 @@ class ActionHooks implements InfoActionHook {
 	 * @inheritDoc
 	 */
 	public function onInfoAction( $context, &$pageInfo ): void {
-		wfDebugLog( 'Apiunto', 'Running Info Action Hook' );
-
 		$properties = $this->pageProps->getProperties(
 			$context->getTitle(),
 			AbstractRepository::PROP_KEY
 		);
 
 		$prop = $properties[$context->getTitle()->getArticleID()] ?? null;
-
 		if ( !$prop ) {
 			return;
 		}
 
-		$caches = json_decode( (string)$prop, true );
-		if ( !is_array( $caches ) || $caches === [] ) {
+		$entries = json_decode( (string)$prop, true );
+		if ( !is_array( $entries ) || $entries === [] ) {
 			return;
 		}
 
-		foreach ( $caches as $cache ) {
+		foreach ( $this->cacheInfoResolver->resolve( $entries ) as $row ) {
 			$pageInfo['header-apiunto'][] = [
-				htmlspecialchars( $cache['source'] ),
-				$this->buildCacheInfoList( $cache, $context ),
+				htmlspecialchars( $row['source'] ),
+				$this->buildCacheInfoList( $row, $context ),
 			];
 		}
 	}
 
-	private function buildCacheInfoList( array $cache, IContextSource $context ): string {
+	/**
+	 * @param array $row A resolved row from CacheInfoResolver::resolve()
+	 * @param IContextSource $context
+	 * @return string
+	 */
+	private function buildCacheInfoList( array $row, IContextSource $context ): string {
+		$lang = $context->getLanguage();
+
 		$items = [
-			$this->buildCacheKeyItem( $cache, $context ),
-			// $this->buildCacheTimeItem( $cache, $context ),
-			// $this->buildCacheExpiresItem( $cache, $context ),
+			$this->buildItem(
+				$context,
+				'apiunto-cache-status-info-label',
+				$this->statusText( $row['status'], $context )
+			),
 		];
 
-		if ( isset( $cache['count'] ) && $cache['count'] > 1 ) {
-			$items[] = $this->buildRequestCountItem( $cache, $context );
+		if ( $row['url'] !== null && $row['url'] !== '' ) {
+			$items[] = $this->buildItem( $context, 'apiunto-cache-url-info-label', $row['url'], 'code' );
+		}
+
+		if ( $row['key'] !== null && $row['key'] !== '' ) {
+			$items[] = $this->buildItem( $context, 'apiunto-cache-key-info-label', $row['key'], 'code' );
+		}
+
+		if ( $row['cachedOn'] !== null ) {
+			$items[] = $this->buildItem(
+				$context,
+				'apiunto-cache-time-info-label',
+				$lang->userTimeAndDate( (string)$row['cachedOn'], $context->getUser() ),
+				'time'
+			);
+		}
+
+		if ( $row['expiresOn'] !== null ) {
+			$items[] = $this->buildItem(
+				$context,
+				'apiunto-cache-expires-info-label',
+				$lang->userTimeAndDate( (string)$row['expiresOn'], $context->getUser() ),
+				'time'
+			);
+		}
+
+		$items[] = $this->buildItem(
+			$context,
+			'apiunto-cache-duration-info-label',
+			$lang->formatDuration( $row['cacheDuration'] )
+		);
+
+		if ( $row['count'] > 1 ) {
+			$items[] = $this->buildItem( $context, 'apiunto-request-count-info-label', (string)$row['count'] );
 		}
 
 		return Html::rawElement( 'ul', [], implode( '', $items ) );
 	}
 
-	private function buildCacheKeyItem( array $cache, IContextSource $context ): string {
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-key-info-label' )->text() . ': ' );
-		$value = Html::element( 'code', [], $cache['key'] );
+	/**
+	 * Builds a single labelled list item.
+	 *
+	 * @param IContextSource $context
+	 * @param string $labelKey Message key for the label
+	 * @param string $value Plain-text value
+	 * @param string $valueTag HTML tag to wrap the value in
+	 * @return string
+	 */
+	private function buildItem(
+		IContextSource $context,
+		string $labelKey,
+		string $value,
+		string $valueTag = 'span'
+	): string {
+		$label = Html::element( 'strong', [], $context->msg( $labelKey )->text() . ': ' );
+		$valueHtml = Html::element( $valueTag, [], $value );
 
-		return Html::rawElement( 'li', [], $label . $value );
+		return Html::rawElement( 'li', [], $label . $valueHtml );
 	}
 
-	private function buildCacheTimeItem( array $cache, IContextSource $context ): string {
-		$lang = $context->getLanguage();
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-time-info-label' )->text() . ': ' );
-		$value = Html::element( 'time', [], $lang->timeanddate( $cache['time'], true ) );
+	/**
+	 * Maps a resolver status to its localized label.
+	 *
+	 * @param string $status
+	 * @param IContextSource $context
+	 * @return string
+	 */
+	private function statusText( string $status, IContextSource $context ): string {
+		$key = match ( $status ) {
+			CacheInfoResolver::STATUS_CACHED => 'apiunto-cache-status-cached',
+			CacheInfoResolver::STATUS_DISABLED => 'apiunto-cache-status-disabled',
+			default => 'apiunto-cache-status-not-cached',
+		};
 
-		return Html::rawElement( 'li', [], $label . $value );
-	}
-
-	private function buildCacheExpiresItem( array $cache, IContextSource $context ): string {
-		$lang = $context->getLanguage();
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-cache-expires-info-label' )->text() . ': ' );
-		$value = Html::element( 'time', [], $lang->timeanddate( $cache['expires'], true ) );
-
-		return Html::rawElement( 'li', [], $label . $value );
-	}
-
-	private function buildRequestCountItem( array $cache, IContextSource $context ): string {
-		$label = Html::element( 'strong', [], $context->msg( 'apiunto-request-count-info-label' )->text() . ': ' );
-		$value = htmlspecialchars( (string)$cache['count'] );
-
-		return Html::rawElement( 'li', [], $label . $value );
+		return $context->msg( $key )->text();
 	}
 }
