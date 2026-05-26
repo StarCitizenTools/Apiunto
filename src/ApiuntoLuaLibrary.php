@@ -126,7 +126,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			wfDebugLog( 'Apiunto', sprintf( 'Request cache MISS: %s', $cacheKey ) );
 		}
 
-		$this->writeCachePropertyKey( $sourceName, $cacheKey );
+		$this->writeCachePropertyKey( $sourceName, $cacheKey, $repository->getRequestUrl() );
 
 		return [ $response ];
 	}
@@ -182,8 +182,9 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	 *
 	 * @param string $sourceName The name of the API source.
 	 * @param string $cacheKey The cache key.
+	 * @param string $url The full request URL, recorded for display on action=info.
 	 */
-	private function writeCachePropertyKey( string $sourceName, string $cacheKey ): void {
+	private function writeCachePropertyKey( string $sourceName, string $cacheKey, string $url ): void {
 		$parserOutput = $this->getParser()->getOutput();
 
 		$propValue = $parserOutput->getPageProperty( AbstractRepository::PROP_KEY );
@@ -206,6 +207,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			$caches[] = [
 				'source' => $sourceName,
 				'key' => $cacheKey,
+				'url' => $url,
 				'count' => 1,
 			];
 		}
