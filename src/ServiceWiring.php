@@ -6,7 +6,8 @@ use MediaWiki\MediaWikiServices;
 return [
 	'Apiunto.CachePurger' => static function ( MediaWikiServices $services ): CachePurger {
 		return new CachePurger(
-			$services->getConnectionProvider()
+			$services->getConnectionProvider(),
+			$services->getMainWANObjectCache()
 		);
 	},
 ];

@@ -7,13 +7,14 @@ namespace MediaWiki\Extension\Apiunto\Services;
 use BatchRowIterator;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Title\Title;
-use ObjectCache;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class CachePurger {
 
 	public function __construct(
-		private readonly IConnectionProvider $dbProvider
+		private readonly IConnectionProvider $dbProvider,
+		private readonly WANObjectCache $cache
 	) {
 	}
 
@@ -62,10 +63,12 @@ class CachePurger {
 		if ( $propertyValue ) {
 			$caches = json_decode( (string)$propertyValue, true );
 			if ( is_array( $caches ) ) {
-				$cache = ObjectCache::getLocalClusterInstance();
 				foreach ( $caches as $cacheInfo ) {
 					if ( isset( $cacheInfo['key'] ) ) {
-						$cache->delete( $cacheInfo['key'] );
+						// HOLDOFF_TTL_NONE: cached responses come from an external API, not a
+						// DB replica, so there is no replica-lag window to guard against. Use a
+						// non-volatile purge so the next fetch can repopulate the cache immediately.
+						$this->cache->delete( $cacheInfo['key'], WANObjectCache::HOLDOFF_TTL_NONE );
 					}
 				}
 			}
