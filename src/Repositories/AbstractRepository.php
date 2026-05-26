@@ -22,11 +22,9 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\Apiunto\Repositories;
 
 use Exception;
-use JsonException;
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\Apiunto\ApiuntoLuaLibrary;
 use MediaWiki\Http\HttpRequestFactory;
-use MediaWiki\MediaWikiServices;
 use Wikimedia\ObjectCache\WANObjectCache;
 
 abstract class AbstractRepository {
@@ -34,41 +32,19 @@ abstract class AbstractRepository {
 	private const DEFAULT_CACHE_DURATION = 86400;
 
 	private ?string $cacheKey = null;
-	private Config $config;
 
-	private WANObjectCache $cache;
-
-	/**
-	 * AbstractRepository constructor.
-	 *
-	 * @param HttpRequestFactory $requestFactory
-	 * @param string $sourceName
-	 * @param array $sourceConfig
-	 * @param array $options Request options gets appended to the request url
-	 */
 	public function __construct(
 		protected readonly HttpRequestFactory $requestFactory,
+		private readonly Config $config,
+		private readonly WANObjectCache $cache,
 		protected readonly string $sourceName,
 		protected readonly array $sourceConfig,
 		protected array $options = []
 	) {
-		$services = MediaWikiServices::getInstance();
-		$this->config = $services->getMainConfig();
-		$this->cache = $services->getMainWANObjectCache();
 	}
 
 	/**
-	 * @param array $options
-	 */
-	public function setOptions( array $options ): void {
-		$this->options = $options;
-	}
-
-	/**
-	 * Perform the request
-	 *
-	 * @return string
-	 * @throws JsonException
+	 * Perform the request, returning the response body (or an error string).
 	 */
 	protected function request(): string {
 		$cacheMiss = false;
@@ -134,9 +110,7 @@ abstract class AbstractRepository {
 	}
 
 	/**
-	 * Creates a key for caching
-	 *
-	 * @return string
+	 * Creates a key for caching.
 	 */
 	public function makeCacheKey(): string {
 		if ( $this->cacheKey !== null ) {
@@ -156,8 +130,6 @@ abstract class AbstractRepository {
 
 	/**
 	 * The full request URL (base URL + identifier + query string).
-	 *
-	 * @return string
 	 */
 	public function getRequestUrl(): string {
 		return $this->getFullUrl();
@@ -182,10 +154,4 @@ abstract class AbstractRepository {
 		return http_build_query( $queryParams );
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getCacheDuration(): int {
-		return (int)( $this->sourceConfig['cacheDuration'] ?? self::DEFAULT_CACHE_DURATION );
-	}
 }

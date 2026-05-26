@@ -23,7 +23,7 @@ namespace MediaWiki\Extension\Apiunto;
 
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
-use MediaWiki\Extension\Apiunto\Repositories\RawRepository;
+use MediaWiki\Extension\Apiunto\Repositories\RepositoryFactory;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
 use MediaWiki\MediaWikiServices;
@@ -33,13 +33,9 @@ use MediaWiki\MediaWikiServices;
  */
 class ApiuntoLuaLibrary extends LibraryBase {
 
-	/**
-	 * Page identifier like ship name oder comm-link id
-	 * @var string
-	 */
+	/** Page identifier like a ship name or comm-link id. */
 	public const IDENTIFIER = 'identifier';
 
-	/** @var string */
 	public const QUERY_PARAMS = 'query';
 
 	private static array $requestCache = [];
@@ -105,8 +101,9 @@ class ApiuntoLuaLibrary extends LibraryBase {
 		}
 		$sourceConfig = $sources[$sourceName];
 
-		$repository = new RawRepository(
-			MediaWikiServices::getInstance()->getHttpRequestFactory(),
+		/** @var RepositoryFactory $factory */
+		$factory = MediaWikiServices::getInstance()->get( 'Apiunto.RepositoryFactory' );
+		$repository = $factory->newRawRepository(
 			$sourceName,
 			$sourceConfig,
 			[
@@ -132,10 +129,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	}
 
 	/**
-	 * Processes the method arguments from Lua.
-	 *
-	 * @param array $arguments Method arguments from Lua.
-	 * @return array HTTP Query data, filtered for non-empty values.
+	 * Processes the Lua method arguments into HTTP query data, filtered for non-empty values.
 	 */
 	private function processArgs( array $arguments ): array {
 		$query = [];
@@ -155,11 +149,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 
 	/**
 	 * Loads a config value for a given key from the main config.
-	 * Returns null if a ConfigException was thrown and no default is provided.
-	 *
-	 * @param string $key The config key.
-	 * @param mixed|null $default Default value to return if config is not found.
-	 * @return mixed The configuration value or the default.
+	 * Returns the default (or null) if a ConfigException was thrown.
 	 */
 	private function getConfigValue( string $key, mixed $default = null ): mixed {
 		try {
@@ -178,11 +168,8 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	}
 
 	/**
-	 * Writes the cache key to the page properties for purging.
-	 *
-	 * @param string $sourceName The name of the API source.
-	 * @param string $cacheKey The cache key.
-	 * @param string $url The full request URL, recorded for display on action=info.
+	 * Records the cache key in the page properties so the cached response can be purged.
+	 * The request URL is stored alongside it for display on action=info.
 	 */
 	private function writeCachePropertyKey( string $sourceName, string $cacheKey, string $url ): void {
 		$parserOutput = $this->getParser()->getOutput();

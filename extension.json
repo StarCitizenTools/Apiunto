@@ -47,12 +47,15 @@
 			"services": [
 				"Apiunto.CachePurger"
 			]
+		},
+		"ScribuntoHooks": {
+			"class": "MediaWiki\\Extension\\Apiunto\\Hooks\\ScribuntoHooks"
 		}
 	},
 	"Hooks": {
 		"ArticlePurge": "PurgeHooks",
 		"InfoAction": "ActionHooks",
-		"ScribuntoExternalLibraries": "MediaWiki\\Extension\\Apiunto\\Hooks\\ScribuntoHooks::onScribuntoExternalLibraries"
+		"ScribuntoExternalLibraries": "ScribuntoHooks"
 	},
 	"ServiceWiringFiles": [
 		"src/ServiceWiring.php"

@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types=1 );
+
 namespace MediaWiki\Extension\Apiunto\Maintenance;
 
 use MediaWiki\Extension\Apiunto\Services\CachePurger;
@@ -22,7 +24,7 @@ class PurgeCache extends Maintenance {
 		$this->addOption( 'dry-run', "Don't actually delete the cache." );
 	}
 
-	public function execute() {
+	public function execute(): void {
 		/** @var CachePurger $purger */
 		$purger = MediaWikiServices::getInstance()->get( 'Apiunto.CachePurger' );
 

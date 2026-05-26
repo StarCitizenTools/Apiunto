@@ -64,9 +64,7 @@ class ActionHooks implements InfoActionHook {
 	}
 
 	/**
-	 * @param array $row A resolved row from CacheInfoResolver::resolve()
-	 * @param IContextSource $context
-	 * @return string
+	 * Builds the cache-info list for a single resolved row from CacheInfoResolver::resolve().
 	 */
 	private function buildCacheInfoList( array $row, IContextSource $context ): string {
 		$lang = $context->getLanguage();
@@ -119,13 +117,8 @@ class ActionHooks implements InfoActionHook {
 	}
 
 	/**
-	 * Builds a single labelled list item.
-	 *
-	 * @param IContextSource $context
-	 * @param string $labelKey Message key for the label
-	 * @param string $value Plain-text value
-	 * @param string $valueTag HTML tag to wrap the value in
-	 * @return string
+	 * Builds a single labelled list item: a <strong> label (from $labelKey) followed by
+	 * $value wrapped in $valueTag.
 	 */
 	private function buildItem(
 		IContextSource $context,
@@ -141,10 +134,6 @@ class ActionHooks implements InfoActionHook {
 
 	/**
 	 * Maps a resolver status to its localized label.
-	 *
-	 * @param string $status
-	 * @param IContextSource $context
-	 * @return string
 	 */
 	private function statusText( string $status, IContextSource $context ): string {
 		$key = match ( $status ) {

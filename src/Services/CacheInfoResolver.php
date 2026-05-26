@@ -76,7 +76,6 @@ class CacheInfoResolver {
 	/**
 	 * Batch-read the live cache state for the entries' keys in a single round trip.
 	 *
-	 * @param array $entries
 	 * @return array[] Keyed by cache key; each value has cachedOn and expiresOn. Only includes
 	 *   keys that are currently cached (present and not expired).
 	 */
