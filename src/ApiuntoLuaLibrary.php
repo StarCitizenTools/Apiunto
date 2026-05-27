@@ -66,34 +66,8 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	 * @throws LuaError If arguments are invalid.
 	 */
 	public function getRaw(): array {
-		$args = func_get_args();
-
-		if ( !isset( $args[0] ) || !is_string( $args[0] ) || $args[0] === '' ) {
-			throw new LuaError( 'Apiunto: Call to getRaw() requires a non-empty string source as the first argument.' );
-		}
-		$sourceName = $args[0];
-
-		if ( !isset( $args[1] ) || !is_string( $args[1] ) ) {
-			throw new LuaError( 'Apiunto: Call to getRaw() requires a string identifier as the second argument.' );
-		}
-		$identifier = $args[1];
-
-		$inputOptions = [];
-		if ( isset( $args[2] ) ) {
-			if ( is_array( $args[2] ) ) {
-				$inputOptions = $args[2];
-			} else {
-				// Log a warning but proceed with empty options if the second arg is not an array.
-				// Lua will get an empty result if this leads to an invalid API call,
-				// or the API might handle default parameters.
-				wfLogWarning( sprintf(
-					'Apiunto: Call to getRaw() for identifier "%s" expected an array for options ' .
-						'(third argument), got %s. Proceeding with empty options.',
-					$identifier,
-					gettype( $args[2] )
-				) );
-			}
-		}
+		[ 'source' => $sourceName, 'identifier' => $identifier, 'query' => $queryParams ] =
+			LuaArguments::parse( func_get_args() );
 
 		$sources = $this->getConfigValue( 'ApiuntoSources' );
 		if ( !isset( $sources[$sourceName] ) ) {
@@ -108,7 +82,7 @@ class ApiuntoLuaLibrary extends LibraryBase {
 			$sourceConfig,
 			[
 				self::IDENTIFIER => $identifier,
-				self::QUERY_PARAMS => $this->processArgs( $inputOptions ),
+				self::QUERY_PARAMS => $queryParams,
 			]
 		);
 
@@ -126,25 +100,6 @@ class ApiuntoLuaLibrary extends LibraryBase {
 		$this->writeCachePropertyKey( $sourceName, $cacheKey, $repository->getRequestUrl() );
 
 		return [ $response ];
-	}
-
-	/**
-	 * Processes the Lua method arguments into HTTP query data, filtered for non-empty values.
-	 */
-	private function processArgs( array $arguments ): array {
-		$query = [];
-		foreach ( $arguments as $key => $value ) {
-			$key = strval( $key );
-			if ( is_array( $value ) ) {
-				$query[$key] = implode( ',', array_map( 'strval', $value ) );
-			} else {
-				$query[$key] = strval( $value );
-			}
-		}
-
-		return array_filter( $query, static function ( $value ) {
-			return $value !== '';
-		} );
 	}
 
 	/**
@@ -174,31 +129,9 @@ class ApiuntoLuaLibrary extends LibraryBase {
 	private function writeCachePropertyKey( string $sourceName, string $cacheKey, string $url ): void {
 		$parserOutput = $this->getParser()->getOutput();
 
-		$propValue = $parserOutput->getPageProperty( AbstractRepository::PROP_KEY );
-		$caches = $propValue ? json_decode( (string)$propValue, true ) : [];
-		if ( !is_array( $caches ) ) {
-			$caches = [];
-		}
+		$entries = CacheManifest::decode( $parserOutput->getPageProperty( AbstractRepository::PROP_KEY ) );
+		$entries = CacheManifest::addEntry( $entries, $sourceName, $cacheKey, $url );
 
-		$found = false;
-		foreach ( $caches as &$cache ) {
-			if ( $cache['key'] === $cacheKey ) {
-				$cache['count'] = ( $cache['count'] ?? 1 ) + 1;
-				$found = true;
-				break;
-			}
-		}
-		unset( $cache );
-
-		if ( !$found ) {
-			$caches[] = [
-				'source' => $sourceName,
-				'key' => $cacheKey,
-				'url' => $url,
-				'count' => 1,
-			];
-		}
-
-		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, json_encode( $caches ) );
+		$parserOutput->setPageProperty( AbstractRepository::PROP_KEY, CacheManifest::encode( $entries ) );
 	}
 }
