@@ -140,4 +140,52 @@ class AbstractRepositoryTest extends MediaWikiUnitTestCase {
 
 		$this->assertSame( 'Could not retrieve API Data', $repo->getRaw() );
 	}
+
+	public function testReturnsStaleCachedValueWhenHttpFails(): void {
+		// Use mock time so we can drive logical staleness deterministically.
+		$mockTime = microtime( true );
+		$cache = new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
+		$cache->setMockTime( $mockTime );
+
+		// HTTP must throw so the regeneration callback fails and falls into the
+		// catch-block stale-serve path.
+		$req = $this->createMock( \MWHttpRequest::class );
+		$req->method( 'execute' )->willThrowException( new \RuntimeException( 'network down' ) );
+		$factory = $this->createMock( HttpRequestFactory::class );
+		// create() is ONLY reached from inside the regeneration callback. Requiring
+		// exactly one call proves getWithSetCallback() invoked the callback (logical
+		// staleness) rather than serving a fresh value directly.
+		$factory->expects( $this->once() )->method( 'create' )->willReturn( $req );
+
+		$repo = $this->newRepo(
+			[ 'baseUrl' => 'https://api.example' ],
+			[
+				ApiuntoLuaLibrary::IDENTIFIER => 'Aurora',
+				ApiuntoLuaLibrary::QUERY_PARAMS => [],
+			],
+			$factory,
+			$cache,
+			true
+		);
+
+		// Seed with a short logical TTL but a long staleTTL: after advancing past
+		// the logical TTL the value is logically stale (so getWithSetCallback runs
+		// the callback to regenerate) yet physically retained (so the callback's
+		// own $this->cache->get() can still read it).
+		$cache->set( $repo->makeCacheKey(), 'stale-but-served', 10, [ 'staleTTL' => 3600 ] );
+		$mockTime += 20;
+
+		// The catch-block stale-serve path emits E_USER_WARNING via wfLogWarning();
+		// the suite converts warnings to exceptions, so capture it here. This also
+		// asserts that the catch branch was actually entered.
+		$raw = null;
+		$this->expectPHPError(
+			E_USER_WARNING,
+			static function () use ( $repo, &$raw ) {
+				$raw = $repo->getRaw();
+			}
+		);
+
+		$this->assertSame( 'stale-but-served', $raw );
+	}
 }

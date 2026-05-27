@@ -5,6 +5,7 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\Apiunto\Services;
 
 use BatchRowIterator;
+use MediaWiki\Extension\Apiunto\CacheManifest;
 use MediaWiki\Extension\Apiunto\Repositories\AbstractRepository;
 use MediaWiki\Title\Title;
 use Wikimedia\ObjectCache\WANObjectCache;
@@ -64,10 +65,7 @@ class CachePurger {
 			return;
 		}
 
-		$caches = json_decode( (string)$propertyValue, true );
-		if ( !is_array( $caches ) ) {
-			return;
-		}
+		$caches = CacheManifest::decode( $propertyValue );
 
 		foreach ( $caches as $cacheInfo ) {
 			if ( isset( $cacheInfo['key'] ) ) {
