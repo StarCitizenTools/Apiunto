@@ -19,7 +19,7 @@ wfLoadExtension( 'Apiunto' );
 
 $wgApiuntoSources = [
     'StarCitizenWikiAPI' => [
-        'baseUrl' => 'https://api.star-citizen.wiki',
+        'baseUrl' => 'https://api.star-citizen.wiki/api/',
         'token' => '', // optional
         'timeout' => 5, // optional, default 5
         'cacheDuration' => 3600, // optional, default 86400
